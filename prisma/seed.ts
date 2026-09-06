@@ -1,4 +1,5 @@
 import { prisma } from './prisma'
+import { hashPassword } from '../lib/password'
 
 async function main() {
   // Delete all existing data
@@ -7,11 +8,13 @@ async function main() {
   await prisma.label.deleteMany()
   await prisma.user.deleteMany()
 
-  // Create user
+  // Create user with hashed password
+  const hashedPassword = await hashPassword('demo123')
   const user = await prisma.user.create({
     data: {
       email: 'demo@example.com',
       name: 'Demo User',
+      password: hashedPassword,
     },
   })
 
@@ -161,7 +164,7 @@ async function main() {
       labelIds: [urgentLabel.id],
     },
     {
-      title: 'Read 'Atomic Habits' book',
+      title: "Read 'Atomic Habits' book",
       description: 'Read chapters 1-3 and take notes',
       status: 'TODO',
       priority: 'NORMAL',
