@@ -1,4 +1,4 @@
-import { prisma } from './prisma'
+import { prisma } from '../lib/prisma'
 import { hashPassword } from '../lib/password'
 
 async function main() {
@@ -179,8 +179,8 @@ async function main() {
       data: {
         title: taskData.title,
         description: taskData.description,
-        status: taskData.status,
-        priority: taskData.priority,
+        status: taskData.status as any,
+        priority: taskData.priority as any,
         dueDate: taskData.dueDate,
         userId: user.id,
         listId: taskData.listId,
