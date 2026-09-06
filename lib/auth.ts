@@ -1,10 +1,10 @@
-import { NextAuthOptions } from 'next-auth'
+import NextAuth, { SessionStrategy } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -45,24 +45,24 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as SessionStrategy,
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
-        token.id = user.id
-        token.name = user.name
-        token.email = user.email
-        token.image = user.image
+        token.id = user.id as string
+        token.name = user.name as string | undefined
+        token.email = user.email as string | undefined
+        token.image = user.image as string | undefined
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token) {
-        session.user.id = token.id
-        session.user.name = token.name
-        session.user.email = token.email
-        session.user.image = token.image
+        session.user.id = token.id as string
+        session.user.name = token.name as string | undefined
+        session.user.email = token.email as string | undefined
+        session.user.image = token.image as string | undefined
       }
       return session
     },
@@ -73,4 +73,4 @@ export const authOptions: NextAuthOptions = {
   },
 }
 
-export { authOptions }
+export default authOptions
