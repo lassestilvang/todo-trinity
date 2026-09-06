@@ -1,13 +1,13 @@
 import { useState } from 'react'
-import Button from '../ui/button.tsx'
-import Label from '../labels/Label.tsx'
-import { List, Task, Label as LabelType } from '@/src/types/index'
+import Button from '../ui/button'
+import LabelComponent from '../labels/Label'
+import { List as ListType, Task, Label as LabelType } from '@/src/types/index'
 
 interface ListProps {
-  list: List
-  labels: Label[]
+  list: ListType
+  labels: LabelType[]
   onDelete: (listId: string) => void
-  onLabelCreate: (labelData: Partial<Label>) => void
+  onLabelCreate: (labelData: Partial<LabelType>) => void
 }
 
 export default function List({ list, labels, onDelete, onLabelCreate }: ListProps) {
@@ -186,7 +186,7 @@ export default function List({ list, labels, onDelete, onLabelCreate }: ListProp
 
         <div className="flex flex-wrap gap-2">
           {labels.map(label => (
-            <Label
+            <LabelComponent
               key={label.id}
               label={label}
               onDelete={handleDelete}
