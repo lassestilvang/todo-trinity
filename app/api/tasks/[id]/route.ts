@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { updateTaskSchema, deleteTaskSchema } from '@/lib/validations/task'
-import { auth } from '@/auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -72,7 +73,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
