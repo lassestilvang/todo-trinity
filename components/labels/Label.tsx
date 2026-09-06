@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import Button from '../ui/button.tsx'
-import { Task, Label, List } from '@/src/types/index'
+import Button from '../ui/button'
+import { Task, Label as LabelType, List } from '@/src/types/index'
 
 interface LabelProps {
-  label: Label
+  label: LabelType
   onDelete: (labelId: string) => void
 }
 
