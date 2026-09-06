@@ -63,19 +63,19 @@ code {
 }
 
 /* Responsive design */
-@screen md {
+@media (min-width: 768px) {
   .container {
     max-width: 720px;
   }
 }
 
-@screen lg {
+@media (min-width: 1024px) {
   .container {
     max-width: 1024px;
   }
 }
 
-@screen xl {
+@media (min-width: 1280px) {
   .container {
     max-width: 1280px;
   }
