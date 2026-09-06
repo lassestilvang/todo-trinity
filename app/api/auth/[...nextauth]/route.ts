@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth'
+import NextAuth, { SessionStrategy } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword } from '@/lib/password'
@@ -42,10 +42,10 @@ export const authOptions = {
     }),
   ],
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt' as SessionStrategy,
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
         token.id = user.id
         token.name = user.name
@@ -54,7 +54,7 @@ export const authOptions = {
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token) {
         session.user.id = token.id
         session.user.name = token.name
@@ -70,5 +70,4 @@ export const authOptions = {
   },
 }
 
-export { authOptions as GET, authOptions as POST }
 export default NextAuth(authOptions)
