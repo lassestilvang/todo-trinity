@@ -1,42 +1,6 @@
 import { useState } from 'react'
-import Button from './button.tsx'
-
-interface Label {
-  id: string
-  name: string
-  color: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
-}
-
-interface Task {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: Priority
-  dueDate?: string
-  completedAt?: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  listId?: string
-  labels: Label[]
-  list?: List
-}
-
-interface List {
-  id: string
-  name: string
-  color: string
-  icon: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
-}
+import Button from '../ui/button.tsx'
+import { Task, Label, List } from '@/src/types/index'
 
 interface LabelProps {
   label: Label
