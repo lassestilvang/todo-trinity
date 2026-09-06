@@ -6,11 +6,12 @@ import {
   deleteTaskSchema,
   taskQuerySchema,
 } from '@/lib/validations/task'
-import { auth } from 'next-auth/next'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -113,7 +114,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth()
+    const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
