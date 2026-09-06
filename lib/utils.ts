@@ -130,8 +130,8 @@ export function sortTasks(tasks: any[], sortBy: string, order: '0' | '1' = '0'):
         comparison = a.title.localeCompare(b.title)
         break
       case 'priority':
-        const priorityOrder = { Low: 1, Medium: 2, High: 3, Urgent: 4 }
-        comparison = priorityOrder[a.priority] - priorityOrder[b.priority]
+        const priorityOrder: Record<string, number> = { Low: 1, Medium: 2, High: 3, Urgent: 4 }
+        comparison = priorityOrder[a.priority as keyof Record<string, number>] - priorityOrder[b.priority as keyof Record<string, number>]
         break
       case 'dueDate':
         comparison = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
