@@ -1,16 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'You must be signed in' },
+        { status: 401 }
+      )
+    }
+
+    const userId = session.user.id
+    const searchParams = request.nextUrl.searchParams
+
     const view = searchParams.get('view') || 'all'
     const listId = searchParams.get('listId')
     const labelId = searchParams.get('labelId')
     const completed = searchParams.get('completed')
     const priority = searchParams.get('priority')
 
-    const where: any = {}
+    const where: any = { userId }
 
     if (view === 'today') {
       const today = new Date()
@@ -18,50 +30,37 @@ export async function GET(request: NextRequest) {
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
 
-      where.AND = [
-        { dueDate: { gte: today } },
-        { dueDate: { lt: tomorrow } },
-      ]
+      where.dueDate = { gte: today, lt: tomorrow }
     } else if (view === 'upcoming') {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const nextWeek = new Date(today)
       nextWeek.setDate(nextWeek.getDate() + 7)
 
-      where.AND = [
-        { dueDate: { gte: today } },
-        { dueDate: { lt: nextWeek } },
-      ]
+      where.dueDate = { gte: today, lt: nextWeek }
     } else if (view === 'completed') {
-      where.completed = true
+      where.status = 'COMPLETED'
     } else if (view === 'overdue') {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      where.AND = [
-        { dueDate: { lt: today } },
-        { completed: false },
-      ]
+      where.dueDate = { lt: new Date() }
+      where.status = { not: 'COMPLETED' }
     }
 
     if (listId) {
-      where.listId = parseInt(listId)
+      where.listId = listId
     }
 
     if (labelId) {
       where.labels = {
-        some: {
-          id: parseInt(labelId),
-        },
+        some: { id: labelId },
       }
     }
 
     if (completed !== null) {
-      where.completed = completed === 'true'
+      where.status = completed === 'true' ? 'COMPLETED' : { not: 'COMPLETED' }
     }
 
     if (priority) {
-      where.priority = priority as any
+      where.priority = priority
     }
 
     const tasks = await prisma.task.findMany({
@@ -82,21 +81,9 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [
-        {
-          completed: {
-            asc: true,
-          },
-        },
-        {
-          priority: {
-            desc: true,
-          },
-        },
-        {
-          createdAt: {
-            desc: true,
-          },
-        },
+        { status: 'asc' },
+        { priority: 'desc' },
+        { createdAt: 'desc' },
       ],
     })
 
@@ -104,7 +91,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching view:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch view' },
+      { error: 'Failed to fetch view', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
