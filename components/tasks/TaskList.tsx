@@ -1,4 +1,4 @@
-import { TaskStatus, Priority } from '@/lib/types'
+import { TaskStatus, Priority, Task, List, Label } from '@/src/types/index'
 import { useState } from 'react'
 import TaskItem from './TaskItem'
 
@@ -6,43 +6,6 @@ interface TaskListProps {
   tasks: Task[]
   onUpdate: (taskId: string, updates: Partial<Task>) => void
   onDelete: (taskId: string) => void
-}
-
-interface Task {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: Priority
-  dueDate?: string
-  completedAt?: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  listId?: string
-  labels: Label[]
-  list?: List
-}
-
-interface List {
-  id: string
-  name: string
-  color: string
-  icon: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
-}
-
-interface Label {
-  id: string
-  name: string
-  color: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
 }
 
 export default function TaskList({ tasks, onUpdate, onDelete }: TaskListProps) {
