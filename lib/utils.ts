@@ -1,5 +1,8 @@
-export function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(' ')
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...classes: ClassValue[]) {
+  return twMerge(clsx(classes))
 }
 
 export function formatTime(date: Date): string {
@@ -23,7 +26,7 @@ export function formatDateTime(date: Date): string {
 }
 
 export function getPriorityColor(priority: string): string {
-  const colors = {
+  const colors: Record<string, string> = {
     Low: 'text-green-600 bg-green-50 border-green-200 dark:text-green-200 dark:bg-green-900 dark:border-green-800',
     Medium: 'text-yellow-600 bg-yellow-50 border-yellow-200 dark:text-yellow-200 dark:bg-yellow-900 dark:border-yellow-800',
     High: 'text-orange-600 bg-orange-50 border-orange-200 dark:text-orange-200 dark:bg-orange-900 dark:border-orange-800',
@@ -33,7 +36,7 @@ export function getPriorityColor(priority: string): string {
 }
 
 export function getPriorityIcon(priority: string): string {
-  const icons = {
+  const icons: Record<string, string> = {
     Low: '✓',
     Medium: '⚠️',
     High: '⚠️',
@@ -88,40 +91,40 @@ export function getDaysUntil(date: Date): number {
   today.setHours(0, 0, 0, 0)
   const targetDate = new Date(date)
   targetDate.setHours(0, 0, 0, 0)
-  
+
   const diffTime = targetDate.getTime() - today.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   return diffDays
 }
 
 export function getRelativeTime(date: Date): string {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
-  
+
   let interval = seconds / 31536000
   if (interval > 1) return Math.floor(interval) + ' years ago'
-  
+
   interval = seconds / 2592000
   if (interval > 1) return Math.floor(interval) + ' months ago'
-  
+
   interval = seconds / 86400
   if (interval > 1) return Math.floor(interval) + ' days ago'
-  
+
   interval = seconds / 3600
   if (interval > 1) return Math.floor(interval) + ' hours ago'
-  
+
   interval = seconds / 60
   if (interval > 1) return Math.floor(interval) + ' minutes ago'
-  
+
   return 'Just now'
 }
 
 export function sortTasks(tasks: any[], sortBy: string, order: '0' | '1' = '0'): any[] {
   const sortedTasks = [...tasks]
-  
+
   sortedTasks.sort((a, b) => {
     let comparison = 0
-    
+
     switch (sortBy) {
       case 'title':
         comparison = a.title.localeCompare(b.title)
@@ -139,9 +142,9 @@ export function sortTasks(tasks: any[], sortBy: string, order: '0' | '1' = '0'):
       default:
         comparison = a.title.localeCompare(b.title)
     }
-    
+
     return order === '1' ? comparison : -comparison
   })
-  
+
   return sortedTasks
 }
