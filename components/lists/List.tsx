@@ -1,43 +1,7 @@
 import { useState } from 'react'
-import Button from './button.tsx'
-import Label from './Label.tsx'
-
-interface List {
-  id: string
-  name: string
-  color: string
-  icon: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
-}
-
-interface Task {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: Priority
-  dueDate?: string
-  completedAt?: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  listId?: string
-  labels: Label[]
-  list?: List
-}
-
-interface Label {
-  id: string
-  name: string
-  color: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
-}
+import Button from '../ui/button.tsx'
+import Label from '../labels/Label.tsx'
+import { List, Task, Label as LabelType } from '@/src/types/index'
 
 interface ListProps {
   list: List
@@ -103,7 +67,7 @@ export default function List({ list, labels, onDelete, onLabelCreate }: ListProp
         color: newLabelColor,
         userId: list.userId,
       })
-      setNewLabelName(''')
+      setNewLabelName('')
       setNewLabelColor('blue')
     }
   }
@@ -164,16 +128,7 @@ export default function List({ list, labels, onDelete, onLabelCreate }: ListProp
             color ? `bg-${color}-100 text-${color}-600` : 'bg-gray-100 text-gray-600'
           }`}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={`
-                ${icon === 'briefcase' ? 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2z' : ''}
-                ${icon === 'home' ? 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' : ''}
-                ${icon === 'shopping-cart' ? 'M3 3h2l.76 1.789M3 12h4M3 5h3M3 8h3M5 8v10h12v-10h3' : ''}
-                ${icon === 'book' ? 'M12 6.253v13m0-13C11 5.477 7.896 4.586 5.027 5.247 2.215 5.861 1 8.43 1 11.244l.012.023c-.02.194-.033.39-.033.588v13a2 2 0 002 2h11a2 2 0 002-2v-13a2 2 0 00-2-2v-.012a2.966 2.966 0 00-.438-.626A9.955 9.955 0 0012 5.253z' : ''}
-                ${icon === 'heart' ? 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' : ''}
-                ${icon === 'star' ? 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.921-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L.613 13.44c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' : ''}
-                ${icon === 'flag' ? 'M3 21v-4a2 2 0 012-2h4a2 2 0 012 2v4M8 7V3m0 4L4 7m8 4v12h4m0-12L12 3m8 4h-4' : ''}
-                ${icon === 'clock' ? 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' : ''}
-              </path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2z" />
             </svg>
           </span>
           <h3 className="font-medium text-gray-900">
