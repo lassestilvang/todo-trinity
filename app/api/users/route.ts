@@ -1,90 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const { id } = request.nextUrl.searchParams;
-    
-    let query = prisma.user.findMany({
-      include: {
-        tasks: {
-          include: {
-            list: true,
-            labels: true
-          }
-        },
-        lists: true,
-        labels: true,
-        notifications: true
-      }
-    });
+    const session = await auth()
 
-    if (id) {
-      query = query.where({ id: parseInt(id as string) });
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'You must be signed in' },
+        { status: 401 }
+      )
     }
 
-    const users = await query;
-    return NextResponse.json({ users });
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch users' },
-      { status: 500 }
-    );
-  }
-}
+    const userId = session.user.id
+    const { id } = Object.fromEntries(request.nextUrl.searchParams)
 
-export async function PUT(request: NextRequest) {
-  try {
-    const { id, name, email, avatar, preferences } = await request.json();
-    
-    const user = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: {
-        name,
-        email,
-        avatar,
-        preferences: {
-          update: preferences || {}
-        }
-      },
+    const where: any = {}
+    if (id && id === userId) {
+      where.id = userId
+    }
+
+    const users = await prisma.user.findMany({
+      where,
       include: {
         tasks: {
           include: {
             list: true,
-            labels: true
-          }
+            labels: true,
+          },
         },
         lists: true,
         labels: true,
-        notifications: true
-      }
-    });
+      },
+    })
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ users })
   } catch (error) {
-    console.error('Error updating user:', error);
+    console.error('Error fetching users:', error)
     return NextResponse.json(
-      { error: 'Failed to update user' },
+      { error: 'Failed to fetch users', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const { id } = await request.json();
-    
-    await prisma.user.delete({
-      where: { id: parseInt(id) }
-    });
-
-    return NextResponse.json({ message: 'User deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete user' },
-      { status: 500 }
-    );
+    )
   }
 }
