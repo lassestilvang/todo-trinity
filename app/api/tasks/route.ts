@@ -1,158 +1,177 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import {
+  createTaskSchema,
+  updateTaskSchema,
+  deleteTaskSchema,
+  taskQuerySchema,
+} from '@/lib/validations/task'
+import { auth } from 'next-auth/next'
 
 export async function GET(request: NextRequest) {
   try {
-    const { listId, labelId, status, search, dateRange } = request.nextUrl.searchParams;
-    
-    let query = prisma.task.findMany({
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'You must be signed in to view tasks' },
+        { status: 401 }
+      )
+    }
+
+    const userId = session.user.id
+
+    const searchParams = request.nextUrl.searchParams
+    const queryParams = {
+      listId: searchParams.get('listId') || undefined,
+      labelId: searchParams.get('labelId') || undefined,
+      status: searchParams.get('status') || undefined,
+      priority: searchParams.get('priority') || undefined,
+      search: searchParams.get('search') || undefined,
+      dateRange: searchParams.get('dateRange') || undefined,
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 50,
+      page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1,
+      sortBy: (searchParams.get('sortBy') as any) || 'createdAt',
+      sortOrder: (searchParams.get('sortOrder') as any) || 'desc',
+    }
+
+    const validated = taskQuerySchema.parse(queryParams)
+
+    const where: any = {
+      userId,
+      ...(validated.listId && { listId: validated.listId }),
+      ...(validated.status && { status: validated.status as any }),
+      ...(validated.priority && { priority: validated.priority as any }),
+      ...(validated.search && {
+        OR: [
+          { title: { contains: validated.search, mode: 'insensitive' } },
+          { description: { contains: validated.search, mode: 'insensitive' } },
+        ],
+      }),
+    }
+
+    if (validated.labelId) {
+      where.labels = {
+        some: { id: validated.labelId },
+      }
+    }
+
+    if (validated.dateRange) {
+      const [start, end] = validated.dateRange.split(',')
+      where.OR = where.OR || []
+      where.OR.push(
+        {
+          dueDate: {
+            gte: new Date(start),
+            lte: new Date(end),
+          },
+        },
+        {
+          createdAt: {
+            gte: new Date(start),
+            lte: new Date(end),
+          },
+        }
+      )
+    }
+
+    const tasks = await prisma.task.findMany({
+      where,
       include: {
-        list: true,
         labels: true,
-        user: true
+        list: true,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
-    });
+        [validated.sortBy]: validated.sortOrder,
+      },
+      skip: (validated.page - 1) * validated.limit,
+      take: validated.limit,
+    })
 
-    if (listId) {
-      query = query.where({ listId: parseInt(listId as string) });
-    }
+    const total = await prisma.task.count({ where: Object.keys(where).length > 0 ? where : { userId } })
 
-    if (labelId) {
-      query = query.where({
-        labels: {
-          some: { id: parseInt(labelId as string) }
-        }
-      });
-    }
-
-    if (status) {
-      query = query.where({ status: status as string });
-    }
-
-    if (search) {
-      query = query.where({
-        OR: [
-          { title: { contains: search as string, mode: 'insensitive' } },
-          { description: { contains: search as string, mode: 'insensitive' } }
-        ]
-      });
-    }
-
-    if (dateRange) {
-      const [start, end] = (dateRange as string).split(',');
-      query = query.where({
-        OR: [
-          {
-            dueDate: {
-              gte: new Date(start),
-              lte: new Date(end)
-            }
-          },
-          {
-            createdAt: {
-              gte: new Date(start),
-              lte: new Date(end)
-            }
-          }
-        ]
-      });
-    }
-
-    const tasks = await query;
-    return NextResponse.json({ tasks });
+    return NextResponse.json({
+      tasks,
+      meta: {
+        total,
+        page: validated.page,
+        limit: validated.limit,
+        hasMore: tasks.length === validated.limit,
+      },
+    })
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    console.error('Error fetching tasks:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch tasks' },
+      {
+        error: 'Failed to fetch tasks',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
-    );
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { title, description, dueDate, priority, listId, labelIds = [] } = await request.json();
-    
+    const session = await auth()
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'You must be signed in to create tasks' },
+        { status: 401 }
+      )
+    }
+
+    const userId = session.user.id
+
+    let body: any
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON', message: 'Request body must be valid JSON' },
+        { status: 400 }
+      )
+    }
+
+    const validated = createTaskSchema.parse(body)
+
     const task = await prisma.task.create({
       data: {
-        title,
-        description,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        priority: priority || 'medium',
-        status: 'pending',
-        listId: listId ? parseInt(listId) : null,
-        labels: {
-          connect: labelIds.map((id: number) => ({ id }))
-        }
+        title: validated.title,
+        description: validated.description,
+        status: validated.status as any,
+        priority: validated.priority as any,
+        dueDate: validated.dueDate,
+        listId: validated.listId || null,
+        userId,
+        labels: validated.labelIds
+          ? {
+              connect: validated.labelIds.map((id: string) => ({ id })),
+            }
+          : undefined,
       },
       include: {
-        list: true,
         labels: true,
-        user: true
-      }
-    });
-
-    return NextResponse.json({ task }, { status: 201 });
-  } catch (error) {
-    console.error('Error creating task:', error);
-    return NextResponse.json(
-      { error: 'Failed to create task' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const { id, title, description, dueDate, priority, status, listId, labelIds = [] } = await request.json();
-    
-    const task = await prisma.task.update({
-      where: { id: parseInt(id) },
-      data: {
-        title,
-        description,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        priority,
-        status,
-        listId: listId ? parseInt(listId) : null,
-        labels: {
-          set: labelIds.map((id: number) => ({ id }))
-        }
+        list: true,
       },
-      include: {
-        list: true,
-        labels: true,
-        user: true
-      }
-    });
+    })
 
-    return NextResponse.json({ task });
+    return NextResponse.json({ task }, { status: 201 })
   } catch (error) {
-    console.error('Error updating task:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'You must be signed in to create tasks' },
+        { status: 401 }
+      )
+    }
+    console.error('Error creating task:', error)
     return NextResponse.json(
-      { error: 'Failed to update task' },
+      {
+        error: 'Failed to create task',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(request: NextRequest) {
-  try {
-    const { id } = await request.json();
-    
-    await prisma.task.delete({
-      where: { id: parseInt(id) }
-    });
-
-    return NextResponse.json({ message: 'Task deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting task:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete task' },
-      { status: 500 }
-    );
+    )
   }
 }
