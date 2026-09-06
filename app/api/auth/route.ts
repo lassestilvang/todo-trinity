@@ -1,70 +1,102 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { hashPassword, verifyPassword } from '@/lib/password'
+import { signUpSchema, signInSchema } from '@/lib/validations/auth'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
-    
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (!user || user.password !== password) {
+    let body: any
+    try {
+      body = await request.json()
+    } catch {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
+        { error: 'Invalid JSON', message: 'Request body must be valid JSON' },
+        { status: 400 }
+      )
     }
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar
-      }
-    });
-  } catch (error) {
-    console.error('Error authenticating:', error);
-    return NextResponse.json(
-      { error: 'Authentication failed' },
-      { status: 500 }
-    );
-  }
-}
+    // Handle sign-up
+    if (body.action === 'signup') {
+      const validated = signUpSchema.parse(body)
 
-export async function PUT(request: NextRequest) {
-  try {
-    const { name, email, password, avatar } = await request.json();
-    
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: {
-        name,
-        password,
-        avatar
-      },
-      create: {
-        name,
-        email,
-        password,
-        avatar: avatar || 'https://example.com/default-avatar.png'
-      }
-    });
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email: validated.email },
+      })
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        avatar: user.avatar
+      if (existingUser) {
+        return NextResponse.json(
+          { error: 'Email already exists', message: 'A user with this email already exists' },
+          { status: 409 }
+        )
       }
-    });
-  } catch (error) {
-    console.error('Error registering:', error);
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(validated.password, 10)
+
+      // Create user
+      const user = await prisma.user.create({
+        data: {
+          name: validated.name,
+          email: validated.email,
+          password: hashedPassword,
+        },
+      })
+
+      // Remove password from response
+      const { password, ...userWithoutPassword } = user
+
+      return NextResponse.json(
+        {
+          message: 'User created successfully',
+          user: userWithoutPassword,
+        },
+        { status: 201 }
+      )
+    }
+
+    // Handle sign-in
+    if (body.action === 'signin') {
+      const validated = signInSchema.parse(body)
+
+      const user = await prisma.user.findUnique({
+        where: { email: validated.email },
+      })
+
+      if (!user || !user.password) {
+        return NextResponse.json(
+          { error: 'Invalid credentials', message: 'Invalid email or password' },
+          { status: 401 }
+        )
+      }
+
+      const isValid = await bcrypt.compare(validated.password, user.password)
+
+      if (!isValid) {
+        return NextResponse.json(
+          { error: 'Invalid credentials', message: 'Invalid email or password' },
+          { status: 401 }
+        )
+      }
+
+      const { password, ...userWithoutPassword } = user
+
+      return NextResponse.json({
+        message: 'Sign in successful',
+        user: userWithoutPassword,
+      })
+    }
+
     return NextResponse.json(
-      { error: 'Registration failed' },
+      { error: 'Invalid action', message: 'Action must be "signup" or "signin"' },
+      { status: 400 }
+    )
+  } catch (error) {
+    console.error('Auth error:', error)
+    return NextResponse.json(
+      { error: 'Authentication failed', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
-    );
+    )
   }
 }
