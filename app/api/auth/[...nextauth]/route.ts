@@ -1,14 +1,15 @@
 import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { prisma } from '../lib/prisma'
+import { prisma } from '@/lib/prisma'
+import { verifyPassword } from '@/lib/password'
 
-export default NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email>', type: 'email' },
-        password: { label: 'Password>', type: 'password' },
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials || !credentials.email || !credentials.password) {
@@ -21,13 +22,13 @@ export default NextAuth({
           },
         })
 
-        if (!user) {
+        if (!user || !user.password) {
           return null
         }
 
-        // In a real application, you would hash and verify the password
-        // For now, we'll just check if the password matches the email
-        if (credentials.password !== credentials.email) {
+        const isValid = await verifyPassword(credentials.password, user.password)
+
+        if (!isValid) {
           return null
         }
 
@@ -67,4 +68,7 @@ export default NextAuth({
     signIn: '/auth/signin',
     signOut: '/auth/signout',
   },
-})
+}
+
+export { authOptions as GET, authOptions as POST }
+export default NextAuth(authOptions)
