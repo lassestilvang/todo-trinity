@@ -1,58 +1,23 @@
-import { TaskStatus, Priority } from '@/lib/types'
+import { TaskStatus, Priority, Task, List, Label } from '@/src/types/index'
 import { useState } from 'react'
+import { cn } from '@/lib/utils'
 
 interface AddTaskProps {
-  onCreate: (taskData: Partial<Task>) => void
+  onCreate: (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId' | 'labels'>) => void
+  labels?: Label[]
 }
 
-interface Task {
-  id: string
-  title: string
-  description?: string
-  status: TaskStatus
-  priority: Priority
-  dueDate?: string
-  completedAt?: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  listId?: string
-  labels: Label[]
-  list?: List
-}
-
-interface List {
-  id: string
-  name: string
-  color: string
-  icon: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
-}
-
-interface Label {
-  id: string
-  name: string
-  color: string
-  createdAt: string
-  updatedAt: string
-  userId: string
-  tasks: Task[]
-}
-
-export default function AddTask({ onCreate }: AddTaskProps) {
+export default function AddTask({ onCreate, labels = [] }: AddTaskProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [status, setStatus] = useState(TaskStatus.TODO)
-  const [priority, setPriority] = useState(Priority.NORMAL)
+  const [status, setStatus] = useState<TaskStatus>(TaskStatus.TODO)
+  const [priority, setPriority] = useState<Priority>(Priority.NORMAL)
   const [dueDate, setDueDate] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!title.trim()) {
       return
     }
@@ -164,7 +129,7 @@ export default function AddTask({ onCreate }: AddTaskProps) {
             Clear
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }
