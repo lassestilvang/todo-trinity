@@ -1,12 +1,5 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
-
-interface User {
-  id: string
-  name: string
-  email: string
-  avatar?: string
-}
+import { User } from '@/src/types/index'
 
 interface UserContextType {
   user: User | null
@@ -20,12 +13,18 @@ const UserContext = createContext<UserContextType | undefined>(undefined)
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const router = useRouter()
 
   useEffect(() => {
+    // Check if user is stored in localStorage (for backward compatibility)
+    // In a real app, this would check the session from NextAuth
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
-      setUser(JSON.parse(storedUser))
+      try {
+        setUser(JSON.parse(storedUser))
+      } catch (error) {
+        console.error('Failed to parse stored user:', error)
+        localStorage.removeItem('user')
+      }
     }
     setLoading(false)
   }, [])
@@ -33,13 +32,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const login = async (userData: User) => {
     setUser(userData)
     localStorage.setItem('user', JSON.stringify(userData))
-    router.push('/dashboard')
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem('user')
-    router.push('/login')
   }
 
   return (
