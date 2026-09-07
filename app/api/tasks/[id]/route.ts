@@ -59,7 +59,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    broadcastTaskUpdate(task)
+    broadcastTaskUpdate(task as any)
 
     return NextResponse.json({ task })
   } catch (error) {
