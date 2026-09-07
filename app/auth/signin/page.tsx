@@ -1,9 +1,13 @@
-import { useState } from 'react'
+'use client'
+import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { authOptions } from '@/lib/auth'
+import { getServerSession } from 'next-auth/next'
 
-export default function SignIn() {
+function SignInForm() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -108,21 +112,16 @@ export default function SignIn() {
   )
 }
 
-// Check if user is already signed in
-export async function getServerSideProps(context: any) {
-  const { getSession } = await import('next-auth/react')
-  const session = await getSession(context)
+// Client component that checks auth status on mount
+export default function SignInPage() {
+  useEffect(() => {
+    ;(async () => {
+      const session = await getServerSession(authOptions)
+      if (session) {
+        redirect('/')
+      }
+    })()
+  }, [])
 
-  if (session) {
-    return {
-      redirect: {
-        destination: '/',
-        permanent: false,
-      },
-    }
-  }
-
-  return {
-    props: {},
-  }
+  return <SignInForm />
 }
