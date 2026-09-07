@@ -1,13 +1,17 @@
+"use client"
+
 import { TaskStatus, Priority, Task, List, Label } from '@/src/types/index'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import CommentThread from '@/components/comments/CommentThread'
 
 interface TaskItemProps {
   task: Task
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void
   onPriorityChange: (taskId: string, newPriority: Priority) => void
   onDelete: (taskId: string) => void
+  onCommentsOpen: (taskId: string) => void
 }
 
 const statusColors = {
@@ -23,10 +27,11 @@ const priorityColors = {
   [Priority.URGENT]: 'bg-red-100 text-red-800 border-red-300',
 }
 
-export default function TaskItem({ task, onStatusChange, onPriorityChange, onDelete }: TaskItemProps) {
+export default function TaskItem({ task, onStatusChange, onPriorityChange, onDelete, onCommentsOpen }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
+  const [showComments, setShowComments] = useState(false)
 
   const handleSave = async () => {
     setIsEditing(false)
@@ -146,6 +151,18 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
             </button>
 
             <button
+              onClick={() => {
+                onCommentsOpen(task.id)
+                setShowComments(true)
+              }}
+              className="p-1 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11H6a2 2 0 00-2 2v4a2 2 0 002 2h2m6 0H16a2 2 0 012 2v2a2 2 0 01-2 2h-2m-8 0v-4c0-2.21 1.79-4 4-4h4c2.21 0 4 1.79 4 4v4z" />
+              </svg>
+            </button>
+
+            <button
               onClick={handleDelete}
               className="p-1 text-red-500 hover:text-red-600"
             >
@@ -174,6 +191,13 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
           </div>
         )}
       </div>
+
+      {showComments && (
+        <CommentThread
+          taskId={task.id}
+          onClose={() => setShowComments(false)}
+        />
+      )}
     </motion.div>
   )
 }
