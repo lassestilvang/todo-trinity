@@ -30,15 +30,15 @@ export interface User {
 export interface Task {
   id: string
   title: string
-  description?: string
+  description?: string | null
   status: TaskStatus
   priority: Priority
-  dueDate?: string
-  completedAt?: string
+  dueDate?: string | null
+  completedAt?: string | null
   createdAt: string
   updatedAt: string
   userId: string
-  listId?: string
+  listId?: string | null
   labels: Label[]
   list?: List
 }
