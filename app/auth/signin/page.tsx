@@ -1,127 +1,98 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { authOptions } from '@/lib/auth'
-import { getServerSession } from 'next-auth/next'
+"use client"
 
-function SignInForm() {
-  const router = useRouter()
+import { useState } from 'react'
+import { useAuth } from '@/src/hooks/useTasks'
+import { useRouter } from 'next/navigation'
+
+export default function SignInPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+
+  const { login, isLoggingIn } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
+
+    if (!email || !password) {
+      setError('Please fill in all fields')
+      return
+    }
 
     try {
-      const result = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
-        callbackUrl: '/',
-      })
-
-      if (result?.error) {
-        setError(result.error)
-      } else if (result?.url) {
-        router.push(result.url)
-      } else {
-        router.push('/')
-      }
+      await login({ email, password })
+      router.push('/')
     } catch (err) {
-      setError('An error occurred during sign in')
-    } finally {
-      setLoading(false)
+      setError(err instanceof Error ? err.message : 'Invalid credentials')
     }
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="text-gray-600 mt-2">Sign in to your account to continue</p>
-          </div>
-
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Sign in to Todo Trinity
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Welcome back! Please sign in to your account.
+          </p>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
+            <div className="bg-red-50 border border-red-400 text-red-700 px-4 py-3 rounded">
               {error}
             </div>
           )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
               </label>
               <input
-                type="email"
                 id="email"
+                name="email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="you@example.com"
                 required
-                autoComplete="email"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="you@example.com"
               />
             </div>
-
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
               <input
-                type="password"
                 id="password"
+                name="password"
+                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="••••••••"
                 required
-                autoComplete="current-password"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Your password"
               />
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Signing In...' : 'Sign In'}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-gray-600">
-            <p>
-              Don&apos;t have an account?{' '}
-              <Link href="/auth/signup" className="text-blue-600 hover:text-blue-700 font-medium">
-                Create Account
-              </Link>
-            </p>
           </div>
+
+          <button
+            type="submit"
+            disabled={isLoggingIn}
+            className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoggingIn ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600">
+            Demo credentials: <span className="font-medium">demo@example.com / demo123</span>
+          </p>
         </div>
       </div>
     </div>
   )
-}
-
-// Client component that checks auth status on mount
-export default function SignInPage() {
-  useEffect(() => {
-    ;(async () => {
-      const session = await getServerSession(authOptions)
-      if (session) {
-        redirect('/')
-      }
-    })()
-  }, [])
-
-  return <SignInForm />
 }
