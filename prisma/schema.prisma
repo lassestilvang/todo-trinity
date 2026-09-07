@@ -23,6 +23,15 @@ model User {
   sessions          Session[]
   accounts          Account[]
   notifications     Notification[]
+  comments          Comment[]
+  activityLogs      ActivityLog[]
+  workspaces        WorkspaceMember[]
+  settings          UserSetting[]
+  assignedTasks     Task[]    @relation("TaskAssignee")
+  mentions          Mention[]
+  connectedAccounts ConnectedAccount[]
+  calendarSyncs     CalendarSync[]
+  backups           Backup[]
 
   @@map("users")
 }
@@ -40,12 +49,46 @@ model Task {
 
   userId            String
   listId            String?
+  workspaceId       String?
 
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   list              List?    @relation(fields: [listId], references: [id], onDelete: SetNull)
+  workspace         Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   labels            Label[]  @relation("TaskLabel")
+  comments          Comment[]
+  subtasks          SubTask[]
+  taskDependencies  TaskDependency[] @relation("TaskDependency")
+  taskDependents    TaskDependency[] @relation("TaskDependent")
+  assignedTo        User?    @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedToId      String?
 
   @@map("tasks")
+}
+
+model SubTask {
+  id                String   @id @default(cuid())
+  title             String
+  completed         Boolean  @default(false)
+  completedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  taskId            String
+  task              Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("subtasks")
+}
+
+model TaskDependency {
+  id                String   @id @default(cuid())
+  taskId            String
+  dependsOnId       String
+  task              Task     @relation("TaskDependency", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn         Task     @relation("TaskDependent", fields: [dependsOnId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+
+  @@unique([taskId, dependsOnId])
+  @@map("task_dependencies")
 }
 
 model List {
@@ -57,9 +100,11 @@ model List {
   updatedAt         DateTime @updatedAt
 
   userId            String
+  workspaceId       String?
   tasks             Task[]
 
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace         Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
   @@map("lists")
 }
@@ -127,6 +172,174 @@ model Notification {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model Comment {
+  id           String   @id @default(cuid())
+  content      String
+  taskId       String
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  parentId     String?
+  resolved     Boolean  @default(false)
+
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies      Comment[] @relation("CommentReplies")
+  mentions     Mention[]
+
+  @@map("comments")
+}
+
+model Mention {
+  id           String   @id @default(cuid())
+  commentId    String
+  userId       String
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  comment      Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mentions")
+}
+
+model ActivityLog {
+  id           String   @id @default(cuid())
+  userId       String
+  action       String
+  resource     String
+  resourceId   String?
+  details      Json?
+  createdAt    DateTime @default(now())
+  ipAddress    String?
+  userAgent    String?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("activity_logs")
+}
+
+model Workspace {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  color        String?
+  icon         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  members      WorkspaceMember[]
+  tasks        Task[]
+  lists        List[]
+  invitations  WorkspaceInvitation[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMember {
+  id           String   @id @default(cuid())
+  userId       String
+  workspaceId  String
+  role         WorkspaceRole @default(MEMBER)
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@map("workspace_members")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+  GUEST
+}
+
+model WorkspaceInvitation {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  email        String
+  role         WorkspaceRole @default(MEMBER)
+  token        String   @unique
+  expiresAt    DateTime
+  accepted     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_invitations")
+}
+
+model ConnectedAccount {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String
+  providerId   String?
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  scope        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("connected_accounts")
+}
+
+model CalendarSync {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     String
+  calendarId   String
+  syncToken    String?
+  lastSync     DateTime @default(now())
+  enabled      Boolean  @default(true)
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("calendar_syncs")
+}
+
+model UserSetting {
+  id           String   @id @default(cuid())
+  userId       String
+  key          String
+  value        String
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@map("user_settings")
+}
+
+model Backup {
+  id           String   @id @default(cuid())
+  userId       String
+  fileName     String
+  fileSize     Int
+  status       BackupStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+  completedAt  DateTime?
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("backups")
+}
+
+enum BackupStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum TaskStatus {
