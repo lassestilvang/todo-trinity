@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    broadcastTaskCreate(task)
+    broadcastTaskCreate(task as any)
 
     return NextResponse.json({ task }, { status: 201 })
   } catch (error) {
