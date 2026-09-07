@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: any }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const userId = session.user.id
-    const { id } = params
+    const { id } = await params
 
     let body: any
     try {
@@ -188,7 +188,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: any }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -200,7 +200,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     const userId = session.user.id
-    const { id } = params
+    const { id } = await params
 
     const label = await prisma.label.findUnique({ where: { id } })
 
