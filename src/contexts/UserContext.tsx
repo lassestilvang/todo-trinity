@@ -1,3 +1,4 @@
+"use client"
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react'
 import { User } from '@/src/types/index'
 
@@ -10,24 +11,24 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
 
-export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Check if user is stored in localStorage (for backward compatibility)
-    // In a real app, this would check the session from NextAuth
+function getInitialUser(): User | null {
+  if (typeof window !== 'undefined') {
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser))
+        return JSON.parse(storedUser)
       } catch (error) {
         console.error('Failed to parse stored user:', error)
         localStorage.removeItem('user')
       }
     }
-    setLoading(false)
-  }, [])
+  }
+  return null
+}
+
+export function UserProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(() => getInitialUser())
+  const [loading, setLoading] = useState(false)
 
   const login = async (userData: User) => {
     setUser(userData)
