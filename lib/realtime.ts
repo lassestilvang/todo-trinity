@@ -11,7 +11,7 @@ const recentEvents: Array<{
 
 const MAX_EVENTS = 50
 
-export function broadcastTaskCreate(task: Task): void {
+export function broadcastTaskCreate(task: any): void {
   const event: {
     id: string
     type: 'task_created' | 'task_updated' | 'task_deleted'
@@ -41,7 +41,7 @@ export function broadcastTaskCreate(task: Task): void {
   }
 }
 
-export function broadcastTaskUpdate(task: Task): void {
+export function broadcastTaskUpdate(task: any): void {
   const event: {
     id: string
     type: 'task_created' | 'task_updated' | 'task_deleted'
