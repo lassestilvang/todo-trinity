@@ -114,9 +114,68 @@ The application uses NextAuth.js for authentication. Configure providers in `lib
 
 ## Testing
 
-Run tests with:
+The application has comprehensive test coverage with:
+
+### Test Configuration
+- **Jest**: Main testing framework
+- **React Testing Library**: Component testing
+- **TypeScript**: Full type checking with strict mode
+- **Coverage Targets**: 80% for branches, functions, lines, and statements
+
+### Available Scripts
+
+- `npm run test` - Run all tests (unit, integration, and component tests)
+- `npm run test:watch` - Run tests in watch mode
+
+### Test Coverage
+
+The test suite includes:
+
+#### Unit Tests (32 files)
+- **Lib utilities**: 8 files for utils, password, realtime, gamification, suggestions, rate-limit, auth-middleware, and validations
+- **Component tests**: 3 files for TaskItem, TaskList, AddTask components
+- **Context tests**: 1 file for UserContext provider
+- **Integration tests**: 1 file for complete workflow testing
+
+#### Integration Tests (27 files)
+- **API routes**: 27 test files covering all endpoints:
+  - `/api/auth` - Authentication and user registration
+  - `/api/tasks` - Task CRUD operations (including individual task tests)
+  - `/api/lists` - List management
+  - `/api/labels` - Label management
+  - `/api/notifications` - Notification system
+  - `/api/user-stats` - User statistics
+  - `/api/user-lists` - User-specific lists
+  - `/api/user-labels` - User-specific labels
+  - `/api/user-reminders` - User reminders
+  - `/api/views` - Task views (today, upcoming, completed, overdue)
+  - `/api/gamification` - Gamification system
+  - `/api/suggestions` - Smart task suggestions
+  - `/api/search` - Search functionality
+  - `/api/realtime` - Real-time updates
+  - `/api/users` - User endpoints
+  - And more
+
+### Testing Best Practices
+
+The test suite follows:
+- **Edge case coverage**: Null/undefined, error conditions, boundary testing
+- **Mock isolation**: All external dependencies mocked
+- **Component lifecycle**: Proper cleanup after each test
+- **Type safety**: All tests use TypeScript with proper typing
+- **Performance**: Tests designed to run efficiently
+
+### Quick Start for Testing
+
 ```bash
-npm run test
+# Run the test suite
+cnpm run test
+
+# Run in watch mode for development
+cnpm run test:watch
+
+# Check coverage (requires Jest coverage reporting)
+# npm run test -- --coverage --collect-coverage-from='lib/**/*.ts' --collect-coverage-from='app/api/**/*.ts'
 ```
 
 ## Deployment
