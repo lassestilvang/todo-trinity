@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { updateTaskSchema, deleteTaskSchema } from '@/lib/validations/task'
+import { broadcastTaskUpdate, broadcastTaskDelete } from '@/lib/realtime'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -16,7 +17,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const userId = session.user.id
-    const { id } = params
+    const { id } = await params
 
     let body: any
     try {
@@ -58,6 +59,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
+    broadcastTaskUpdate(task)
+
     return NextResponse.json({ task })
   } catch (error) {
     console.error('Error updating task:', error)
@@ -71,7 +74,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -83,7 +86,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     const userId = session.user.id
-    const { id } = params
+    const { id } = await params
 
     const task = await prisma.task.findUnique({ where: { id } })
 
@@ -102,6 +105,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     await prisma.task.delete({ where: { id } })
+    broadcastTaskDelete(id)
 
     return NextResponse.json({ message: 'Task deleted successfully' })
   } catch (error) {
