@@ -6,6 +6,7 @@ import {
   deleteTaskSchema,
   taskQuerySchema,
 } from '@/lib/validations/task'
+import { broadcastTaskCreate, broadcastTaskUpdate, broadcastTaskDelete } from '@/lib/realtime'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
@@ -157,6 +158,8 @@ export async function POST(request: NextRequest) {
         list: true,
       },
     })
+
+    broadcastTaskCreate(task)
 
     return NextResponse.json({ task }, { status: 201 })
   } catch (error) {
