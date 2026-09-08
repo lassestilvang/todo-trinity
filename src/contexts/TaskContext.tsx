@@ -9,8 +9,8 @@ import { TaskContextType } from '@/src/types/index'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      cacheTime: 1000 * 60 * 10, // 10 minutes
+      staleTime: 1000 * 60 * 5,
+      cacheTime: 1000 * 60 * 10,
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -27,6 +27,8 @@ const api = {
     labelId?: string
     page?: number
     limit?: number
+    sortBy?: string
+    sortOrder?: string
   }) => {
     const searchParams = new URLSearchParams()
     if (params?.listId) searchParams.append('listId', params.listId)
@@ -36,6 +38,8 @@ const api = {
     if (params?.labelId) searchParams.append('labelId', params.labelId)
     if (params?.page) searchParams.append('page', params.page.toString())
     if (params?.limit) searchParams.append('limit', params.limit.toString())
+    if (params?.sortBy) searchParams.append('sortBy', params.sortBy)
+    if (params?.sortOrder) searchParams.append('sortOrder', params.sortOrder)
 
     const url = `/api/tasks?${searchParams.toString()}`
     const response = await fetch(url)
@@ -300,6 +304,211 @@ const api = {
     }
     return response.json()
   },
+
+  getComments: async (taskId: string) => {
+    const response = await fetch(`/api/comments?taskId=${taskId}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch comments')
+    }
+    return response.json()
+  },
+
+  createComment: async (commentData: any) => {
+    const response = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(commentData),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to create comment')
+    }
+    return response.json()
+  },
+
+  updateComment: async (id: string, updates: any) => {
+    const response = await fetch(`/api/comments/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to update comment')
+    }
+    return response.json()
+  },
+
+  deleteComment: async (id: string) => {
+    const response = await fetch(`/api/comments/${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to delete comment')
+    }
+    return response.json()
+  },
+
+  getActivity: async (userId: string) => {
+    const response = await fetch(`/api/activity?userId=${userId}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch activity')
+    }
+    return response.json()
+  },
+
+  getAnalytics: async (userId: string, params?: any) => {
+    const searchParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) searchParams.append(key, String(value))
+      })
+    }
+    const response = await fetch(`/api/analytics?${searchParams.toString()}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch analytics')
+    }
+    return response.json()
+  },
+
+  getIntegrations: async (): Promise<{ integrations: any[] }> => {
+    const response = await fetch('/api/integrations')
+    if (!response.ok) {
+      throw new Error('Failed to fetch integrations')
+    }
+    return response.json()
+  },
+
+  connectIntegration: async (integrationData: any): Promise<{ integration: any }> => {
+    const response = await fetch('/api/integrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(integrationData),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to connect integration')
+    }
+    return response.json()
+  },
+
+  disconnectIntegration: async (provider: string): Promise<{ message: string }> => {
+    const response = await fetch('/api/integrations', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider }),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to disconnect integration')
+    }
+    return response.json()
+  },
+
+  exportData: async (params: any): Promise<any> => {
+    const searchParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined) searchParams.append(key, String(value))
+    })
+    const response = await fetch(`/api/export?${searchParams.toString()}`)
+    if (!response.ok) {
+      throw new Error('Failed to export data')
+    }
+    return response.json()
+  },
+
+  importData: async (file: File): Promise<{ message: string }> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await fetch('/api/import', {
+      method: 'POST',
+      body: formData,
+    })
+    if (!response.ok) {
+      throw new Error('Failed to import data')
+    }
+    return response.json()
+  },
+
+  getSettings: async (): Promise<any> => {
+    const response = await fetch('/api/settings')
+    if (!response.ok) {
+      throw new Error('Failed to fetch settings')
+    }
+    return response.json()
+  },
+
+  updateSettings: async (settings: any): Promise<any> => {
+    const response = await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to update settings')
+    }
+    return response.json()
+  },
+
+  getBackups: async (): Promise<{ backups: any[] }> => {
+    const response = await fetch('/api/backup')
+    if (!response.ok) {
+      throw new Error('Failed to fetch backups')
+    }
+    return response.json()
+  },
+
+  createBackup: async (type: string): Promise<{ backup: any }> => {
+    const response = await fetch('/api/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type }),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to create backup')
+    }
+    return response.json()
+  },
+
+  getAdminStats: async (): Promise<any> => {
+    const response = await fetch('/api/admin/stats')
+    if (!response.ok) {
+      throw new Error('Failed to fetch admin stats')
+    }
+    return response.json()
+  },
+
+  getAdminUsers: async (): Promise<{ users: any[] }> => {
+    const response = await fetch('/api/admin/users')
+    if (!response.ok) {
+      throw new Error('Failed to fetch admin users')
+    }
+    return response.json()
+  },
+
+  getAdminWorkspaces: async (): Promise<{ workspaces: any[] }> => {
+    const response = await fetch('/api/admin/workspaces')
+    if (!response.ok) {
+      throw new Error('Failed to fetch admin workspaces')
+    }
+    return response.json()
+  },
+
+  getCalendarSync: async (provider: string): Promise<any> => {
+    const response = await fetch(`/api/integrations/calendar/sync?provider=${provider}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch calendar sync')
+    }
+    return response.json()
+  },
+
+  updateCalendarSync: async (provider: string, enabled: boolean): Promise<any> => {
+    const response = await fetch('/api/integrations/calendar/sync', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, enabled }),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to update calendar sync')
+    }
+    return response.json()
+  },
 }
 
 // Initial state
@@ -441,7 +650,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     ['tasks', state.filters],
     () => api.getTasks(state.filters),
     {
-      select: (data) => data.tasks || [],
+      select: (data: any) => data.tasks || [],
       enabled: !!state.selectedList || !!state.selectedStatus || !!state.selectedLabel,
     }
   )
@@ -450,7 +659,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     ['lists'],
     () => api.getLists(),
     {
-      select: (data) => data.lists || [],
+      select: (data: any) => data.lists || [],
     }
   )
 
@@ -458,7 +667,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     ['labels'],
     () => api.getLabels(),
     {
-      select: (data) => data.labels || [],
+      select: (data: any) => data.labels || [],
     }
   )
 
@@ -466,7 +675,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     ['notifications'],
     () => api.getNotifications(),
     {
-      select: (data) => data.notifications || [],
+      select: (data: any) => data.notifications || [],
       refetchInterval: 30000, // Refetch every 30 seconds
     }
   )
