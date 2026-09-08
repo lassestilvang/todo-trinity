@@ -1,163 +1,213 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { NextResponse } from 'next/server'
+import { integrationConfigs } from '@/lib/integrations/base'
+import { SlackIntegration } from '@/lib/integrations/slack'
+import { GitHubIntegration } from '@/lib/integrations/github'
+import { NotionIntegration } from '@/lib/integrations/notion'
+import { ZapierIntegration } from '@/lib/integrations/zapier'
 
-// GET /api/integrations - Get user's connected integrations
-export async function GET(request: NextRequest) {
+// GET /api/integrations - List connected integrations
+export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type')
 
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to view integrations' },
-        { status: 401 }
-      )
-    }
-
-    const userId = session.user.id
-
-    const integrations = await prisma.connectedAccount.findMany({
-      where: { userId }
-    })
-
-    return NextResponse.json({ integrations })
-  } catch (error) {
-    console.error('Error fetching integrations:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch integrations', message: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
-  }
-}
-
-// POST /api/integrations/connect - Connect a new integration
-export async function POST(request: NextRequest) {
-  try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to connect integrations' },
-        { status: 401 }
-      )
-    }
-
-    const userId = session.user.id
-    let body: any
-
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON', message: 'Request body must be valid JSON' },
-        { status: 400 }
-      )
-    }
-
-    const { provider, providerId, accessToken, refreshToken, expiresAt, scope } = body
-
-    if (!provider) {
-      return NextResponse.json(
-        { error: 'Bad Request', message: 'provider is required' },
-        { status: 400 }
-      )
-    }
-
-    // Check if integration already exists
-    const existing = await prisma.connectedAccount.findFirst({
-      where: { userId, provider }
-    })
-
-    if (existing) {
-      // Update existing integration
-      await prisma.connectedAccount.update({
-        where: { id: existing.id },
-        data: {
-          providerId,
-          accessToken,
-          refreshToken,
-          expiresAt,
-          scope,
-          updatedAt: new Date(),
+    // In a real app, this would fetch from database based on user/session
+    // For now, return mock data
+    const mockIntegrations = [
+      {
+        id: 'slack-user123',
+        provider: 'slack',
+        type: 'communication',
+        config: integrationConfigs.find(c => c.id === 'slack')!,
+        connected: true,
+        lastSync: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
+        syncStatus: 'success',
+        metadata: {
+          team: 'Todo Trinity Team',
+          user: 'john.doe',
+          url: 'https://todotrinity.slack.com'
         }
-      })
-      return NextResponse.json({
-        message: 'Integration updated successfully',
-        integration: { ...existing, ...{ providerId, accessToken, refreshToken, expiresAt, scope } }
-      })
+      },
+      {
+        id: 'github-user123',
+        provider: 'github',
+        type: 'project_management',
+        config: integrationConfigs.find(c => c.id === 'github')!,
+        connected: true,
+        lastSync: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
+        syncStatus: 'success',
+        metadata: {
+          user: 'johndoe',
+          avatar: 'https://avatars.githubusercontent.com/u/123456?v=4',
+          installations: 2,
+          has_issue_scope: true
+        }
+      }
+    ]
+
+    if (type) {
+      const filtered = mockIntegrations.filter(i => i.type === type)
+      return NextResponse.json({ integrations: filtered })
     }
 
-    // Create new integration
-    const integration = await prisma.connectedAccount.create({
-      data: {
-        userId,
-        provider,
-        providerId,
-        accessToken,
-        refreshToken,
-        expiresAt: expiresAt ? new Date(expiresAt) : null,
-        scope,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-    })
-
-    return NextResponse.json({
-      message: 'Integration connected successfully',
-      integration
-    })
+    return NextResponse.json({ integrations: mockIntegrations })
   } catch (error) {
-    console.error('Error connecting integration:', error)
     return NextResponse.json(
-      { error: 'Failed to connect integration', message: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to fetch integrations' },
       { status: 500 }
     )
   }
 }
 
-// POST /api/integrations/disconnect - Disconnect an integration
-export async function DELETE(request: NextRequest) {
+// POST /api/integrations - Connect a new integration
+export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions)
+    const { provider, credentials } = await request.json()
 
-    if (!session?.user?.id) {
+    if (!provider || !credentials) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to disconnect integrations' },
-        { status: 401 }
-      )
-    }
-
-    const userId = session.user.id
-    let body: any
-
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON', message: 'Request body must be valid JSON' },
+        { error: 'Provider and credentials are required' },
         { status: 400 }
       )
     }
 
-    const { provider } = body
+    // Find the integration config
+    const config = integrationConfigs.find(c => c.id === provider || c.provider === provider)
+    if (!config) {
+      return NextResponse.json(
+        { error: `Integration ${provider} not supported` },
+        { status: 400 }
+      )
+    }
+
+    let integrationInstance
+    switch (provider) {
+      case 'slack':
+        integrationInstance = new SlackIntegration(config)
+        break
+      case 'github':
+        integrationInstance = new GitHubIntegration(config)
+        break
+      case 'notion':
+        integrationInstance = new NotionIntegration(config)
+        break
+      case 'zapier':
+        integrationInstance = new ZapierIntegration(config)
+        break
+      default:
+        return NextResponse.json(
+          { error: `Integration ${provider} not implemented` },
+          { status: 501 }
+        )
+    }
+
+    // Authenticate with the integration
+    const integration = await integrationInstance.authenticate('user123', credentials)
+
+    // In a real app, save to database
+    // For now, return the integration
+    return NextResponse.json({ integration }, { status: 201 })
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || 'Failed to connect integration' },
+      { status: 400 }
+    )
+  }
+}
+
+// DELETE /api/integrations - Disconnect an integration
+export async function DELETE(request: Request) {
+  try {
+    const { provider } = await request.json()
 
     if (!provider) {
       return NextResponse.json(
-        { error: 'Bad Request', message: 'provider is required' },
+        { error: 'Provider is required' },
         { status: 400 }
       )
     }
 
-    await prisma.connectedAccount.delete({
-      where: { userId, provider }
-    })
-
-    return NextResponse.json({ message: 'Integration disconnected successfully' })
-  } catch (error) {
-    console.error('Error disconnecting integration:', error)
+    // In a real app, revoke tokens and delete from database
+    // For now, return success
+    return NextResponse.json({ message: `Integration ${provider} disconnected successfully` })
+  } catch (error: any) {
     return NextResponse.json(
-      { error: 'Failed to disconnect integration', message: error instanceof Error ? error.message : 'Unknown error' },
+      { error: error.message || 'Failed to disconnect integration' },
+      { status: 400 }
+    )
+  }
+}
+
+// POST /api/integrations/:provider/sync - Sync a specific integration
+export async function POST(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const provider = searchParams.get('provider')
+
+    if (!provider) {
+      return NextResponse.json(
+        { error: 'Provider parameter is required' },
+        { status: 400 }
+      )
+    }
+
+    // Find the integration config
+    const config = integrationConfigs.find(c => c.id === provider || c.provider === provider)
+    if (!config) {
+      return NextResponse.json(
+        { error: `Integration ${provider} not supported` },
+        { status: 400 }
+      )
+    }
+
+    let integrationInstance
+    switch (provider) {
+      case 'slack':
+        integrationInstance = new SlackIntegration(config)
+        break
+      case 'github':
+        integrationInstance = new GitHubIntegration(config)
+        break
+      case 'notion':
+        integrationInstance = new NotionIntegration(config)
+        break
+      case 'zapier':
+        integrationInstance = new ZapierIntegration(config)
+        break
+      default:
+        return NextResponse.json(
+          { error: `Integration ${provider} not implemented` },
+          { status: 501 }
+        )
+    }
+
+    // Sync the integration
+    const integration = await integrationInstance.sync('user123')
+
+    return NextResponse.json({ integration })
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || `Failed to sync integration ${provider}` },
+      { status: 500 }
+    )
+  }
+}
+
+// GET /api/integrations/available - List available integrations
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const type = searchParams.get('type')
+
+    let available = integrationConfigs
+    if (type) {
+      available = integrationConfigs.filter(c => c.type === type)
+    }
+
+    return NextResponse.json({ integrations: available })
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to fetch available integrations' },
       { status: 500 }
     )
   }
