@@ -12,6 +12,7 @@ import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel'
 import SuggestionsPanel from '@/components/dashboard/SuggestionsPanel'
 import GamificationPanel from '@/components/dashboard/GamificationPanel'
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel'
+import MentionsPanel from '@/components/dashboard/MentionsPanel'
 import SearchPanel from '@/components/dashboard/SearchPanel'
 import FocusMode from '@/components/dashboard/FocusMode'
 import CalendarView from '@/components/calendar/CalendarView'
@@ -30,6 +31,7 @@ export default function DashboardContent() {
   const [showKanban, setShowKanban] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
   const [showFocusMode, setShowFocusMode] = useState(false)
+  const [showMentions, setShowMentions] = useState(false)
 
   if (taskContext.loading) {
     return (
@@ -153,6 +155,12 @@ export default function DashboardContent() {
                 Search
               </button>
               <button
+                onClick={() => setShowMentions(!showMentions)}
+                className={`px-4 py-2 rounded ${showMentions ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Mentions
+              </button>
+              <button
                 onClick={() => setActiveView('analytics')}
                 className={`px-4 py-2 rounded ${activeView === 'analytics' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-700'}`}
               >
@@ -199,6 +207,11 @@ export default function DashboardContent() {
         {showFocusMode && (
           <FocusMode
             onClose={() => setShowFocusMode(false)}
+          />
+        )}
+        {showMentions && (
+          <MentionsPanel
+            onClose={() => setShowMentions(false)}
           />
         )}
       </main>
