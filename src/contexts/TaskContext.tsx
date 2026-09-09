@@ -295,6 +295,24 @@ const api = {
     return response.json()
   },
 
+  getMentions: async () => {
+    const response = await fetch('/api/mentions')
+    if (!response.ok) {
+      throw new Error('Failed to fetch mentions')
+    }
+    return response.json()
+  },
+
+  markMentionsAsRead: async () => {
+    const response = await fetch('/api/mentions', {
+      method: 'PUT',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to mark mentions as read')
+    }
+    return response.json()
+  },
+
   parseNaturalLanguage: async (text: string, userId: string) => {
     const response = await fetch(`/api/suggestions/parse`, {
       method: 'POST',
@@ -1070,6 +1088,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     getTaskDependencies,
     createDependency,
     deleteDependency,
+    getMentions,
+    markMentionsAsRead,
   }
 
   return (
