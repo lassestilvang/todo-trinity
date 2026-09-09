@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get system-wide statistics
-    const [userCount, taskCount, listCount, labelCount, workspaceCount, activeUsers, pendingInvitations] =
+    const [userCount, taskCount, listCount, labelCount, workspaceCount, activeUsers, pendingInvitations, storageUsed] =
       await Promise.all([
         prisma.user.count(),
         prisma.task.count(),
@@ -48,8 +48,16 @@ export async function GET(request: NextRequest) {
         prisma.workspaceInvitation.count({ where: { accepted: false } })
       ])
 
-    const activeUserIds = activeUsers.map((a: any) => a.userId)
+    const activeUserIds = (activeUsers as any[]).map((a: any) => a.userId)
     const activeUserCount = activeUserIds.length
+
+    // Calculate storage used (approximate)
+    const allTasks = await prisma.task.findMany({
+      select: { description: true },
+      where: { description: { not: null } }
+    })
+    const totalChars = allTasks.reduce((sum, task) => sum + (task.description?.length || 0), 0)
+    const storageGb = Math.round((totalChars / (1024 * 1024)) * 100) / 100 // approximate GB
 
     return NextResponse.json({
       stats: {
@@ -60,6 +68,7 @@ export async function GET(request: NextRequest) {
         totalWorkspaces: workspaceCount,
         activeUsersLast7Days: activeUserCount,
         pendingInvitations: pendingInvitations,
+        storageUsed: `${storageGb} GB`
       },
       activity: {
         userId: session.user.id,
@@ -70,64 +79,6 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching admin stats:', error)
     return NextResponse.json(
       { error: 'Failed to fetch admin stats', message: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
-  }
-}
-
-// GET /api/admin/users - Get all users (admin only)
-export async function GET(request: NextRequest, { params }: { params: any }) {
-  try {
-    const session = await getServerSession(authOptions)
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to view users' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { workspaces: true }
-    })
-
-    const isAdmin = user?.workspaces?.some(member =>
-      member.role === 'ADMIN' || member.role === 'OWNER'
-    )
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Only admins can view users' },
-        { status: 403 }
-      )
-    }
-
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            tasks: true,
-            lists: true,
-            workspaces: true,
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-
-    return NextResponse.json({ users })
-  } catch (error) {
-    console.error('Error fetching users:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch users', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
