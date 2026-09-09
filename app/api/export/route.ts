@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { tasksToCSV, tasksToPDF } from '@/lib/export-utils'
 
 // GET /api/export - Export user data
 export async function GET(request: NextRequest) {
@@ -107,12 +108,90 @@ export async function GET(request: NextRequest) {
     const filename = `todo-trinity-export-${new Date().toISOString().split('T')[0]}`
 
     if (format === 'csv' && resourceType === 'tasks') {
-      const csv = await tasksToCSV(data.tasks as any[])
+      const csv = tasksToCSV(data.tasks as any[])
       return new NextResponse(csv, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv',
           'Content-Disposition': `attachment; filename="${filename}.csv"`,
+        },
+      })
+    }
+
+    if (format === 'pdf' && resourceType === 'tasks') {
+      const pdfBuffer = await tasksToPDF(data.tasks as any[])
+      return new NextResponse(pdfBuffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}.pdf"`,
+        },
+      })
+    }
+
+    if (format === 'pdf') {
+      // Generate PDF report for all data
+      const { jsPDF } = await import('jspdf')
+      const doc = new jsPDF()
+
+      doc.setFontSize(20)
+      doc.setFont('helvetica', 'bold')
+      doc.text('Todo Trinity - Data Export', 105, 15, { align: 'center' })
+
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(128, 128, 128)
+      doc.text(`Exported on: ${new Date().toLocaleString()}`, 105, 25, { align: 'center' })
+
+      doc.setDrawColor(200, 200, 200)
+      doc.setLineWidth(0.5)
+      doc.line(10, 30, 200, 30)
+
+      let y = 37
+      const sections = [
+        { name: 'Tasks', data: data.tasks },
+        { name: 'Lists', data: data.lists },
+        { name: 'Labels', data: data.labels },
+        { name: 'Notifications', data: data.notifications },
+        { name: 'Activity Logs', data: data.activityLogs },
+      ]
+
+      sections.forEach(section => {
+        if (section.data && section.data.length > 0) {
+          if (y > 200) {
+            doc.addPage()
+            y = 20
+          }
+
+          doc.setFont('helvetica', 'bold')
+          doc.setFontSize(14)
+          doc.setTextColor(0, 0, 0)
+          doc.text(`${section.name} (${section.data.length})`, 15, y)
+          y += 5
+
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(9)
+          doc.setTextColor(128, 128, 128)
+          section.data.slice(0, 50).forEach((item: any) => {
+            if (y > 260) {
+              doc.addPage()
+              y = 20
+            }
+            const title = item.title || item.name || item.action || item.id
+            doc.text(`- ${title}`, 20, y)
+            y += 4
+          })
+          y += 3
+        }
+      })
+
+      const pdfBytes = doc.output('arraybuffer')
+      const buffer = Buffer.from(pdfBytes)
+      return new NextResponse(buffer, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${filename}.pdf"`,
         },
       })
     }
@@ -131,23 +210,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
-
-function tasksToCSV(tasks: any[]): string {
-  const headers = ['id', 'title', 'description', 'status', 'priority', 'dueDate', 'completedAt', 'createdAt', 'updatedAt', 'list', 'labels']
-  const rows = tasks.map(task => [
-    task.id,
-    `"${task.title.replace(/"/g, '""')}"`,
-    task.description ? `"${task.description.replace(/"/g, '""')}"` : '',
-    task.status,
-    task.priority,
-    task.dueDate ? task.dueDate.toISOString() : '',
-    task.completedAt ? task.completedAt.toISOString() : '',
-    task.createdAt.toISOString(),
-    task.updatedAt.toISOString(),
-    task.list?.name || '',
-    task.labels?.map((l: any) => l.name).join('|') || '',
-  ])
-
-  return [headers.join(','), ...rows.map(row => row.join(','))].join('\n')
 }
