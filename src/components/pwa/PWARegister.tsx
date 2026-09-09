@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { useToast } from '@/src/hooks/useToast.tsx'
+import { useToast } from '@/src/hooks/useToast'
 
 export default function PWARegister() {
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null)
