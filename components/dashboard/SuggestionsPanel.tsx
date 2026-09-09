@@ -67,7 +67,7 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
                   onClick={() => {
                     setInput(suggestion.title || '')
                     addToast(`Selected: ${suggestion.title}`, 'success')
-                  }
+                  }}
                 >
                   <p className="font-medium text-gray-800 mb-1">{suggestion.title}</p>
                   <p className="text-xs text-gray-500">{suggestion.reason}</p>
