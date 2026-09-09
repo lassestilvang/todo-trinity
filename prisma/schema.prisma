@@ -32,6 +32,7 @@ model User {
   connectedAccounts ConnectedAccount[]
   calendarSyncs     CalendarSync[]
   backups           Backup[]
+  templates         Template[]
 
   @@map("users")
 }
@@ -353,4 +354,37 @@ enum Priority {
   NORMAL
   HIGH
   URGENT
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  icon        String   @default("")
+  color       String   @default("")
+  category    String
+  isCustom    Boolean  @default(false)
+  userId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  tasks       TemplateTask[] @relation("TemplateTasks")
+
+  @@map("templates")
+}
+
+model TemplateTask {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  priority    Priority @default(NORMAL)
+  order       Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  template    Template   @relation("TemplateTasks", fields: [templateId], references: [id], onDelete: Cascade)
+  templateId  String
+
+  @@map("template_tasks")
 }
