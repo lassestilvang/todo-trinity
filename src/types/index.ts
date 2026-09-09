@@ -41,6 +41,28 @@ export interface Task {
   listId?: string | null
   labels: Label[]
   list?: List
+  subtasks?: SubTask[]
+  dependencies?: TaskDependency[]
+  dependents?: TaskDependency[]
+  assignedToId?: string | null
+}
+
+export interface SubTask {
+  id: string
+  title: string
+  completed: boolean
+  completedAt?: string | null
+  createdAt: string
+  updatedAt: string
+  taskId: string
+}
+
+export interface TaskDependency {
+  id: string
+  taskId: string
+  dependsOnId: string
+  createdAt: string
+  dependsOn?: Task
 }
 
 export interface List {
@@ -91,6 +113,45 @@ export interface Account {
   updatedAt: string
 }
 
+export interface AdminStats {
+  totalUsers: number
+  totalTasks: number
+  totalLists: number
+  totalLabels: number
+  totalWorkspaces: number
+  activeUsersLast7Days: number
+  pendingInvitations: number
+  storageUsed: string
+}
+
+export interface AdminUser {
+  id: string
+  email: string
+  name?: string | null
+  image?: string | null
+  createdAt: string
+  updatedAt: string
+  _count: {
+    tasks: number
+    lists: number
+    workspaces: number
+  }
+}
+
+export interface AdminWorkspace {
+  id: string
+  name: string
+  description?: string | null
+  createdAt: string
+  updatedAt: string
+  memberCount: number
+  _count: {
+    tasks: number
+    lists: number
+    invitations: number
+  }
+}
+
 export interface UserContextType {
   user: User | null
   login: (user: User) => void
@@ -116,6 +177,13 @@ export interface TaskContextType {
   deleteLabel: (id: string) => Promise<void>
   createNotification: (notificationData: Omit<Notification, 'id' | 'createdAt' | 'userId'>) => Promise<Notification>
   markNotificationAsRead: (id: string) => Promise<void>
+  getSubTasks: (taskId: string) => Promise<{ subtasks: SubTask[] }>
+  createSubTask: (subTaskData: { title: string; taskId: string }) => Promise<SubTask>
+  updateSubTask: (taskId: string, subTaskId: string, updates: Partial<SubTask>) => Promise<SubTask>
+  deleteSubTask: (taskId: string, subTaskId: string) => Promise<void>
+  getTaskDependencies: (taskId: string) => Promise<{ dependencies: TaskDependency[] }>
+  createDependency: (dependencyData: { taskId: string; dependsOnId: string }) => Promise<TaskDependency>
+  deleteDependency: (taskId: string, dependsOnId: string) => Promise<void>
 }
 
 export interface Notification {
