@@ -428,9 +428,70 @@ export const api = {
     return handleResponse(response)
   },
 
+  // Mentions
+  getMentions: async (): Promise<{ mentions: any[] }> => {
+    const response = await fetch('/api/mentions')
+    return handleResponse(response)
+  },
+
+  markMentionsAsRead: async (): Promise<{ message: string }> => {
+    const response = await fetch('/api/mentions', {
+      method: 'PUT',
+    })
+    return handleResponse(response)
+  },
+
   // Task Analytics
   getTaskAnalytics: async (taskId: string): Promise<any> => {
     const response = await fetch(`/api/tasks/${taskId}/analytics`)
+    return handleResponse(response)
+  },
+
+  // Templates
+  getTemplates: async (): Promise<{ templates: any[] }> => {
+    const response = await fetch('/api/templates')
+    return handleResponse(response)
+  },
+
+  createTemplate: async (templateData: { name: string; description?: string; category?: string; icon?: string; color?: string; tasks: any[] }): Promise<{ template: any }> => {
+    const response = await fetch('/api/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(templateData),
+    })
+    return handleResponse(response)
+  },
+
+  applyTemplate: async (templateId: string, listId?: string): Promise<{ message: string; tasks: any[] }> => {
+    const searchParams = new URLSearchParams()
+    searchParams.append('id', templateId)
+    if (listId) searchParams.append('listId', listId)
+    const response = await fetch(`/api/templates?${searchParams.toString()}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    return handleResponse(response)
+  },
+
+  // Calendar Sync
+  getCalendarSync: async (provider: string = 'google'): Promise<any> => {
+    const response = await fetch(`/api/integrations/calendar/sync?provider=${provider}`)
+    return handleResponse(response)
+  },
+
+  updateCalendarSync: async (provider: string, enabled: boolean): Promise<any> => {
+    const response = await fetch('/api/integrations/calendar/sync', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ provider, enabled }),
+    })
+    return handleResponse(response)
+  },
+
+  manualCalendarSync: async (provider: string = 'google'): Promise<any> => {
+    const response = await fetch(`/api/integrations/calendar/sync/manual?provider=${provider}`, {
+      method: 'POST',
+    })
     return handleResponse(response)
   },
 }
