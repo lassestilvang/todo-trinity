@@ -22,7 +22,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
         <div className="bg-white rounded-xl p-6 max-w-sm">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Error</h2>
           <p className="text-gray-600 mb-4">{error.message}</p>
-          <button onClick={onClose} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          <button onClick={onClose} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-500">
             Close
           </button>
         </div>
@@ -81,6 +81,36 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             </select>
           </div>
 
+          {/* Integration Settings */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Connected Integrations
+            </label>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {['google-calendar', 'outlook-calendar', 'github', 'slack', 'notion', 'zapier'].map((integration) => {
+                const config = {
+                  'google-calendar': { name: 'Google Calendar', enabled: settings.calendarSync?.google || false },
+                  'outlook-calendar': { name: 'Outlook Calendar', enabled: settings.calendarSync?.microsoft || false },
+                  'github': { name: 'GitHub', enabled: settings.integrations?.github || false },
+                  'slack': { name: 'Slack', enabled: settings.integrations?.slack || false },
+                  'notion': { name: 'Notion', enabled: false },
+                  'zapier': { name: 'Zapier', enabled: settings.integrations?.zapier || false },
+                }[integration]
+
+                return (
+                  <label key={integration} className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
+                    <div
+                      className={`w-6 h-6 rounded ${config.enabled ? 'bg-green-500' : 'bg-gray-300'} flex items-center justify-center text-sm font-bold text-white`}
+                    >
+                      {integration.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-gray-600">{config.name}</span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+
           {/* Notifications */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -90,8 +120,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <label className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
                 <input
                   type="checkbox"
-                  checked={settings.notifications === 'true'}
-                  onChange={(e) => settings.notifications = e.target.checked ? 'true' : 'false'}
+                  checked={settings.notifications}
+                  onChange={(e) => settings.notifications = e.target.checked}
                   className="rounded"
                 />
                 <span className="text-gray-600">Desktop</span>
@@ -99,8 +129,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <label className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
                 <input
                   type="checkbox"
-                  checked={settings.emailNotifications === 'true'}
-                  onChange={(e) => settings.emailNotifications = e.target.checked ? 'true' : 'false'}
+                  checked={settings.emailNotifications}
+                  onChange={(e) => settings.emailNotifications = e.target.checked}
                   className="rounded"
                 />
                 <span className="text-gray-600">Email</span>
@@ -108,8 +138,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <label className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
                 <input
                   type="checkbox"
-                  checked={settings.desktopNotifications === 'true'}
-                  onChange={(e) => settings.desktopNotifications = e.target.checked ? 'true' : 'false'}
+                  checked={settings.desktopNotifications}
+                  onChange={(e) => settings.desktopNotifications = e.target.checked}
                   className="rounded"
                 />
                 <span className="text-gray-600">Push</span>
@@ -125,7 +155,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             <div className="grid grid-cols-3 gap-2">
               {[1, 3, 5, 7, 10].map((goal) => (
                 <label key={goal} className="flex flex-col items-center rounded bg-gray-100 p-2 cursor-pointer ${
-                  settings.dailyGoal === goal.toString()
+                  settings.dailyGoal === goal
                     ? 'bg-blue-500 text-white'
                     : ''
                 }">
