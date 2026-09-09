@@ -146,9 +146,54 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // TODO: Extract mentions from content and create Mention records
-    // TODO: Send notifications for mentions
-    // TODO: Broadcast comment creation via realtime
+    // Extract mentions from content and create Mention records + notifications
+    const mentionPattern = /@(\w+)/g
+    const mentionedUsernames: string[] = []
+    let match
+    while ((match = mentionPattern.exec(content)) !== null) {
+      mentionedUsernames.push(match[1])
+    }
+
+    if (mentionedUsernames.length > 0) {
+      // Find users by name (case-insensitive partial match)
+      const mentionedUsers = await prisma.user.findMany({
+        where: {
+          OR: mentionedUsernames.map(username => ({
+            name: { contains: username, mode: 'insensitive' }
+          }))
+        },
+        select: { id: true, name: true }
+      })
+
+      // Create Mention records and notifications for each mentioned user
+      for (const mentionedUser of mentionedUsers) {
+        if (mentionedUser.id === userId) continue // Don't notify self
+
+        await prisma.mention.create({
+          data: {
+            commentId: comment.id,
+            userId: mentionedUser.id,
+            read: false
+          }
+        })
+
+        await prisma.notification.create({
+          data: {
+            title: `${session.user.name || 'Someone'} mentioned you in a comment`,
+            message: `${session.user.name || 'Someone'} mentioned you in "${task.title}"`,
+            type: 'mention',
+            data: JSON.stringify({
+              taskId,
+              commentId: comment.id,
+              mentionedBy: userId,
+              mentionedByName: session.user.name
+            }),
+            userId: mentionedUser.id,
+            read: false
+          }
+        })
+      }
+    }
 
     return NextResponse.json({ comment }, { status: 201 })
   } catch (error) {
