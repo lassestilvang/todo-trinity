@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { List } from '@/src/types/index'
 import { api } from '@/lib/api-client'
-import { toast } from '@/src/hooks/useToast'
+import { toast } from '@/src/hooks/useToast.tsx'
 
 export function useLists() {
   const queryClient = useQueryClient()
