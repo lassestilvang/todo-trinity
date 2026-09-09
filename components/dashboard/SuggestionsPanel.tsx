@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from 'react'
 import { useTaskContext } from '@/src/hooks/useTasks'
 import { useSuggestions } from '@/src/hooks/useSuggestions'
 import { useParseNaturalLanguage } from '@/src/hooks/useSuggestions'
@@ -9,9 +10,12 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
   const { suggestions, loading } = useSuggestions('demo')
   const { parse, parsed, loading: parseLoading } = useParseNaturalLanguage()
   const { addToast } = useToast()
+  const { tasks } = useTaskContext()
 
   const [input, setInput] = useState('')
   const [showParser, setShowParser] = useState(false)
+  const [proactiveSuggestions, setProactiveSuggestions] = useState([])
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
   const handleSubmit = () => {
     if (!input.trim()) return
