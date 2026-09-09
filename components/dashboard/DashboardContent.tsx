@@ -12,6 +12,8 @@ import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel'
 import SuggestionsPanel from '@/components/dashboard/SuggestionsPanel'
 import GamificationPanel from '@/components/dashboard/GamificationPanel'
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel'
+import SearchPanel from '@/components/dashboard/SearchPanel'
+import FocusMode from '@/components/dashboard/FocusMode'
 import CalendarView from '@/components/calendar/CalendarView'
 import GanttView from '@/components/views/GanttView'
 import KanbanBoard from '@/components/views/KanbanBoard'
@@ -26,6 +28,8 @@ export default function DashboardContent() {
   const [showCalendar, setShowCalendar] = useState(false)
   const [showGantt, setShowGantt] = useState(false)
   const [showKanban, setShowKanban] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const [showFocusMode, setShowFocusMode] = useState(false)
 
   if (taskContext.loading) {
     return (
@@ -137,6 +141,18 @@ export default function DashboardContent() {
                 Activity
               </button>
               <button
+                onClick={() => setShowFocusMode(!showFocusMode)}
+                className={`px-4 py-2 rounded ${showFocusMode ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Focus
+              </button>
+              <button
+                onClick={() => setShowSearch(!showSearch)}
+                className={`px-4 py-2 rounded ${showSearch ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Search
+              </button>
+              <button
                 onClick={() => setActiveView('analytics')}
                 className={`px-4 py-2 rounded ${activeView === 'analytics' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-700'}`}
               >
@@ -173,6 +189,16 @@ export default function DashboardContent() {
         {showActivity && (
           <ActivityPanel
             onClose={() => setShowActivity(false)}
+          />
+        )}
+        {showSearch && (
+          <SearchPanel
+            onClose={() => setShowSearch(false)}
+          />
+        )}
+        {showFocusMode && (
+          <FocusMode
+            onClose={() => setShowFocusMode(false)}
           />
         )}
       </main>
