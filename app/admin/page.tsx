@@ -48,7 +48,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
             Close
           </button>
         </div>
-      )
+      </div>
     )
   }
 
