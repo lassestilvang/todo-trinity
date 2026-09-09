@@ -2,23 +2,25 @@
 
 import { useState, useEffect } from 'react'
 import { useTaskContext } from '@/src/hooks/useTasks'
-import { useIntegrations } from '@/src/hooks/useSuggestions'
+import { useIntegrations } from '@/src/hooks/useIntegrations'
 import { integrationConfigs } from '@/lib/integrations/base'
+import { AdminStats, AdminUser, AdminWorkspace } from '@/src/types/index'
 
-export default function AdminDashboard({ onClose }: { onClose: () => void }) {
-  const { stats, users, workspaces } = useTaskContext()
+export default function AdminDashboard({ onClose }: { onClose?: () => void }) {
+  const { tasks } = useTaskContext()
   const { integrations, loading: integrationsLoading } = useIntegrations()
   const [activeTab, setActiveTab] = useState('overview')
   const [isAdmin, setIsAdmin] = useState(false)
-  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationConfig | null>(null)
+  const [checking, setChecking] = useState(true)
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [users, setUsers] = useState<AdminUser[]>([])
+  const [workspaces, setWorkspaces] = useState<AdminWorkspace[]>([])
+  const [selectedIntegration, setSelectedIntegration] = useState<any>(null)
+  const [loadingTab, setLoadingTab] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Check admin status on mount
-  useEffect(() => {
-    checkAdmin()
-  }, [])
-
   const checkAdmin = async () => {
-    // Check if user is admin via session
     try {
       const response = await fetch('/api/admin/check', {
         method: 'GET',
@@ -30,13 +32,84 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       console.error('Failed to check admin status:', error)
       // For demo purposes, assume admin
       setIsAdmin(true)
+    } finally {
+      setChecking(false)
     }
+  }
+
+  // Fetch tab-specific data
+  const fetchTabData = async (tab: string) => {
+    setLoadingTab(true)
+    setError(null)
+
+    try {
+      switch (tab) {
+        case 'overview': {
+          const response = await fetch('/api/admin/stats')
+          const data = await response.json()
+          setStats(data.stats)
+          break
+        }
+        case 'users': {
+          const response = await fetch('/api/admin/users')
+          const data = await response.json()
+          setUsers(data.users)
+          break
+        }
+        case 'workspaces': {
+          const response = await fetch('/api/admin/workspaces')
+          const data = await response.json()
+          setWorkspaces(data.workspaces)
+          break
+        }
+        case 'integrations':
+          // Integrations are loaded via useIntegrations hook
+          break
+        case 'backups':
+          // Backups would be fetched from backup API
+          break
+        case 'audit':
+          // Audit logs would be fetched from activity log API
+          break
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load data')
+    } finally {
+      setLoadingTab(false)
+    }
+  }
+
+  useEffect(() => {
+    checkAdmin()
+  }, [])
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchTabData(activeTab)
+    }
+  }, [isAdmin, activeTab])
+
+  const tabs = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'users', label: 'Users' },
+    { key: 'workspaces', label: 'Workspaces' },
+    { key: 'integrations', label: 'Integrations' },
+    { key: 'backups', label: 'Backups' },
+    { key: 'audit', label: 'Audit Log' }
+  ]
+
+  if (checking) {
+    return (
+      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    )
   }
 
   if (!isAdmin) {
     return (
       <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl p-8 text-center">
+        <div className="bg-white rounded-xl p-8 text-center max-w-md">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
           <p className="text-gray-600 mb-6">
             You don't have permission to access the admin dashboard.
@@ -52,23 +125,6 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
     )
   }
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
-
-  const tabs = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'users', label: 'Users' },
-    { key: 'workspaces', label: 'Workspaces' },
-    { key: 'integrations', label: 'Integrations' },
-    { key: 'backups', label: 'Backups' },
-    { key: 'audit', label: 'Audit Log' }
-  ]
-
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center p-4">
       <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] shadow-2xl overflow-y-auto">
@@ -80,48 +136,75 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="p-4 rounded-lg mb-4 bg-gray-50">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-1 rounded text-sm ${
-                activeTab === tab.key ? 'bg-blue-500 text-white' : 'text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          <div className="flex flex-wrap gap-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-4 py-1 rounded text-sm ${
+                  activeTab === tab.key ? 'bg-blue-500 text-white' : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
+          {loadingTab && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              <span className="ml-2 text-gray-600">Loading...</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+              {error}
+            </div>
+          )}
+
           {/* Overview */}
           {activeTab === 'overview' && (
             <div>
               <h3 className="text-lg font-medium mb-4">System Overview</h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Total Users</h4>
-                  <p className="text-2xl font-bold">{stats?.totalUsers || 'Loading...'}</p>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Total Tasks</h4>
-                  <p className="text-2xl font-bold">{stats?.totalTasks || 'Loading...'}</p>
-                </div>
-                <div className="bg-white rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Total Workspaces</h4>
-                  <p className="text-2xl font-bold">{stats?.totalWorkspaces || 'Loading...'}</p>
+                  <p className="text-2xl font-bold">{stats?.totalUsers || '0'}</p>
                 </div>
                 <div className="bg-white rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Active Users (7d)</h4>
-                  <p className="text-2xl font-bold">{stats?.activeUsersLast7Days || 'Loading...'}</p>
+                  <p className="text-2xl font-bold">{stats?.activeUsersLast7Days || '0'}</p>
                 </div>
                 <div className="bg-white rounded-lg p-4">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Connected Integrations</h4>
-                  <p className="text-2xl font-bold">{integrations?.length || 0}</p>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Pending Invites</h4>
+                  <p className="text-2xl font-bold">{stats?.pendingInvitations || '0'}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Total Tasks</h4>
+                  <p className="text-2xl font-bold">{stats?.totalTasks || '0'}</p>
+                </div>
+                <div className="bg-white rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Total Workspaces</h4>
+                  <p className="text-2xl font-bold">{stats?.totalWorkspaces || '0'}</p>
                 </div>
                 <div className="bg-white rounded-lg p-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Storage Used</h4>
                   <p className="text-2xl font-bold">{stats?.storageUsed || '0 GB'}</p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Connected Integrations</h4>
+                <div className="flex items-center space-x-2">
+                  {integrations?.slice(0, 5).map((integration: any) => (
+                    <span key={integration.id} className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
+                      {integration.provider}
+                    </span>
+                  ))}
+                  <span className="text-sm text-gray-500">{integrations?.length || 0} total</span>
                 </div>
               </div>
 
@@ -143,7 +226,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                 Manage user accounts, roles, and permissions
               </p>
 
-              {users?.length > 0 ? (
+              {users.length > 0 ? (
                 <div className="space-y-4">
                   {users.map((user: any) => (
                     <div key={user.id} className="bg-white rounded-lg p-4 border">
@@ -157,30 +240,11 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             <p className="text-sm text-gray-500">{user.email}</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                            user.role === 'manager' ? 'bg-yellow-100 text-yellow-800' :
-                            user.role === 'member' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {user.role}
-                          </span>
-                          <button
-                            onClick={() => {
-                              // Would open user management modal
-                              console.log('Manage user:', user.id)
-                            }}
-                            className="p-1 text-gray-400 hover:text-gray-600"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H3m8 4H3m8-4H3m11 8H9m-1-8l-3 3m2 2l3-3" />
-                            </svg>
-                          </button>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span>{user._count?.tasks || 0} tasks</span>
+                          <span>{user._count?.workspaces || 0} workspaces</span>
+                          <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
                         </div>
-                      </div>
-                      <div className="mt-3 text-xs text-gray-500">
-                        Last active: {new Date(user.lastActive || user.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   ))}
@@ -199,7 +263,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                 Create and manage team workspaces
               </p>
 
-              {workspaces?.length > 0 ? (
+              {workspaces.length > 0 ? (
                 <div className="space-y-4">
                   {workspaces.map((workspace: any) => (
                     <div key={workspace.id} className="bg-white rounded-lg p-4 border">
@@ -213,37 +277,20 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             <p className="text-sm text-gray-500">{workspace.description || 'No description'}</p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800`}>
-                            {workspace.memberCount} members
-                          </span>
-                          <button
-                            onClick={() => {
-                              // Would open workspace management modal
-                              console.log('Manage workspace:', workspace.id)
-                            }}
-                            className="p-1 text-gray-400 hover:text-gray-600"
-                          >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H3m8 4H3m8-4H3m11 8H9m-1-8l-3 3m2 2l3-3" />
-                            </svg>
-                          </button>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <span>{workspace.memberCount || workspace.members?.length || 0} members</span>
+                          <span>{workspace._count?.tasks || 0} tasks</span>
+                          <span>Created {new Date(workspace.createdAt).toLocaleDateString()}</span>
                         </div>
-                      </div>
-                      <div className="mt-3 text-xs text-gray-500">
-                        Created: {new Date(workspace.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500">No workspaces created yet</p>
+                  <p className="text-gray-500 mb-4">No workspaces created yet</p>
                   <button
-                    onClick={() => {
-                      // Would open create workspace modal
-                      console.log('Create workspace')
-                    }}
+                    onClick={() => console.log('Create workspace')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
                     Create Workspace
@@ -263,10 +310,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                     Connect external services to enhance your workflow
                   </p>
                   <button
-                    onClick={() => {
-                      // Would open integration selector
-                      console.log('Add integration')
-                    }}
+                    onClick={() => console.log('Add integration')}
                     className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
                     Add Integration
@@ -281,8 +325,11 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                   <p className="text-gray-500 mb-4">No integrations connected</p>
                   <div className="grid grid-cols-3 gap-4">
                     {integrationConfigs.map((config) => (
-                      <div key={config.id} className="bg-white rounded-lg p-4 border hover:shadow-md cursor-pointer"
-                        onClick={() => setSelectedIntegration(config)}>
+                      <div
+                        key={config.id}
+                        className="bg-white rounded-lg p-4 border hover:shadow-md cursor-pointer"
+                        onClick={() => setSelectedIntegration(config)}
+                      >
                         <div className="flex items-center justify-center mb-3">
                           <div className={`w-12 h-12 rounded ${config.color}20 flex items-center justify-center text-2xl`}>
                             {config.icon}
@@ -300,7 +347,6 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                     <div className="bg-white rounded-lg p-6 mb-6 border">
                       <h3 className="text-xl font-bold mb-4">{selectedIntegration.name}</h3>
                       <p className="text-gray-600 mb-4">{selectedIntegration.description}</p>
-
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm font-medium text-gray-700">Provider:</p>
@@ -319,7 +365,6 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                           <p className="ml-2 text-sm">{selectedIntegration.scopes.join(', ')}</p>
                         </div>
                       </div>
-
                       <div className="flex justify-end space-x-3 mt-6">
                         <button
                           onClick={() => setSelectedIntegration(null)}
@@ -329,7 +374,6 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                         </button>
                         <button
                           onClick={() => {
-                            // Would initiate OAuth flow
                             console.log('Connect integration:', selectedIntegration.provider)
                             setSelectedIntegration(null)
                           }}
@@ -346,7 +390,17 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                       <div key={integration.id} className="bg-white rounded-lg p-4 border">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
-                            <div className={`w-10 h-10 rounded ${integration.provider === 'google' || integration.provider === 'microsoft' ? 'bg-green-500' : integration.provider === 'github' ? 'bg-gray-800' : integration.provider === 'slack' ? 'bg-purple-500' : 'bg-blue-500'} flex items-center justify-center text-white font-bold`}>
+                            <div
+                              className={`w-10 h-10 rounded ${
+                                integration.provider === 'google' || integration.provider === 'microsoft'
+                                  ? 'bg-green-500'
+                                  : integration.provider === 'github'
+                                  ? 'bg-gray-800'
+                                  : integration.provider === 'slack'
+                                  ? 'bg-purple-500'
+                                  : 'bg-blue-500'
+                              } flex items-center justify-center text-white font-bold`}
+                            >
                               {integration.provider.charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -355,25 +409,19 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              integration.syncStatus === 'success' ? 'bg-green-100 text-green-800' :
-                              integration.syncStatus === 'error' ? 'bg-red-100 text-red-800' :
-                              integration.syncStatus === 'syncing' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full ${
+                                integration.syncStatus === 'success'
+                                  ? 'bg-green-100 text-green-800'
+                                  : integration.syncStatus === 'error'
+                                  ? 'bg-red-100 text-red-800'
+                                  : integration.syncStatus === 'syncing'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}
+                            >
                               {integration.syncStatus}
                             </span>
-                            <button
-                              onClick={() => {
-                                // Would open integration settings modal
-                                console.log('Manage integration:', integration.id)
-                              }}
-                              className="p-1 text-gray-400 hover:text-gray-600"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H3m8 4H3m8-4H3m11 8H9m-1-8l-3 3m2 2l3-3" />
-                              </svg>
-                            </button>
                           </div>
                         </div>
 
@@ -405,10 +453,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white rounded-lg p-4">
                   <button
-                    onClick={() => {
-                      // Would trigger backup creation
-                      console.log('Create backup')
-                    }}
+                    onClick={() => console.log('Create backup')}
                     className="w-full px-6 py-3 bg-blue-500 text-white rounded hover:bg-blue-600"
                   >
                     Create Backup Now
@@ -428,23 +473,14 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
               <div className="mt-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Backups</h4>
                 <div className="space-y-2">
-                  {/* Would list actual backups */}
                   <div className="bg-white rounded-lg p-3">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-gray-800">Full Backup</span>
                       <span className="text-sm text-gray-500">Today, 2:00 AM</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        className="px-3 py-1 text-xs bg-green-500 text-white rounded"
-                      >
-                        Restore
-                      </button>
-                      <button
-                        className="px-3 py-1 text-xs bg-gray-200 text-gray-600 rounded"
-                      >
-                        Download
-                      </button>
+                      <button className="px-3 py-1 text-xs bg-green-500 text-white rounded">Restore</button>
+                      <button className="px-3 py-1 text-xs bg-gray-200 text-gray-600 rounded">Download</button>
                     </div>
                   </div>
                   <div className="bg-white rounded-lg p-3">
@@ -453,16 +489,8 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                       <span className="text-sm text-gray-500">Yesterday, 2:00 AM</span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        className="px-3 py-1 text-xs bg-green-500 text-white rounded"
-                      >
-                        Restore
-                      </button>
-                      <button
-                        className="px-3 py-1 text-xs bg-gray-200 text-gray-600 rounded"
-                      >
-                        Download
-                      </button>
+                      <button className="px-3 py-1 text-xs bg-green-500 text-white rounded">Restore</button>
+                      <button className="px-3 py-1 text-xs bg-gray-200 text-gray-600 rounded">Download</button>
                     </div>
                   </div>
                 </div>
@@ -490,7 +518,6 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {/* Would list actual audit entries */}
                     <tr className="bg-white border-b">
                       <td className="px-4 py-2 text-xs">2 minutes ago</td>
                       <td className="px-4 py-2">admin@example.com</td>
@@ -518,10 +545,7 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
 
               <div className="mt-4 text-center">
                 <button
-                  onClick={() => {
-                    // Would export audit log
-                    console.log('Export audit log')
-                  }}
+                  onClick={() => console.log('Export audit log')}
                   className="px-4 py-2 bg-gray-200 text-gray-600 rounded hover:bg-gray-300"
                 >
                   Export Log
@@ -533,4 +557,18 @@ export default function AdminDashboard({ onClose }: { onClose: () => void }) {
       </div>
     </div>
   )
+}
+
+function getIntegrationProviderColor(provider: string): string {
+  switch (provider) {
+    case 'google':
+    case 'microsoft':
+      return 'bg-green-500'
+    case 'github':
+      return 'bg-gray-800'
+    case 'slack':
+      return 'bg-purple-500'
+    default:
+      return 'bg-blue-500'
+  }
 }
