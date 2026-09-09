@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Task, TaskStatus, Priority } from '@/src/types/index'
 import { api } from '@/lib/api-client'
-import { toast } from '@/src/hooks/useToast'
+import { toast } from '@/src/hooks/useToast.tsx'
 
 export function useTasks(filters?: {
   listId?: string
@@ -169,9 +169,56 @@ export function useSearch(query: string) {
   )
 
   return {
-    results: data?.results || { tasks: [], lists: [], labels: [] },
+    results: data?.results || { tasks: [], lists, labels: [] },
     loading: isLoading,
     error: error?.message || null,
+  }
+}
+
+export function useSavedSearches() {
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, error } = useQuery(
+    ['savedSearches'],
+    () => api.getSavedSearches(),
+    {
+      staleTime: 1000 * 60 * 5,
+    }
+  )
+
+  const saveSearch = useMutation(
+    (searchData: { name: string; filters?: any; query?: string }) =>
+      api.saveSearch(searchData),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['savedSearches'])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to save search')
+      },
+    }
+  )
+
+  const deleteSearch = useMutation(
+    (name: string) => api.deleteSearch(name),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['savedSearches'])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to delete saved search')
+      },
+    }
+  )
+
+  return {
+    searches: data?.searches || [],
+    loading: isLoading,
+    error: error?.message || null,
+    saveSearch: saveSearch.mutate,
+    deleteSearch: deleteSearch.mutate,
+    isSaving: saveSearch.isLoading,
+    isDeleting: deleteSearch.isLoading,
   }
 }
 
@@ -189,5 +236,187 @@ export function useViews(viewType: string) {
     views: data || [],
     loading: isLoading,
     error: error?.message || null,
+  }
+}
+
+export function useSubTasks(taskId: string) {
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, error, refetch } = useQuery(
+    ['subtasks', taskId],
+    () => api.getSubTasks(taskId),
+    {
+      enabled: !!taskId,
+      staleTime: 1000 * 60 * 5,
+    }
+  )
+
+  const createSubTask = useMutation(
+    (subTaskData: { title: string; taskId: string }) =>
+      api.createSubTask(subTaskData),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['subtasks', taskId])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to create subtask')
+      },
+    }
+  )
+
+  const updateSubTask = useMutation(
+    ({ taskId, subTaskId, updates }: { taskId: string; subTaskId: string; updates: Partial<SubTask> }) =>
+      api.updateSubTask(taskId, subTaskId, updates),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['subtasks', taskId])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to update subtask')
+      },
+    }
+  )
+
+  const deleteSubTask = useMutation(
+    ({ taskId, subTaskId }: { taskId: string; subTaskId: string }) =>
+      api.deleteSubTask(taskId, subTaskId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['subtasks', taskId])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to delete subtask')
+      },
+    }
+  )
+
+  return {
+    subtasks: data?.subtasks || [],
+    loading: isLoading,
+    error: error?.message || null,
+    createSubTask: createSubTask.mutate,
+    updateSubTask: updateSubTask.mutate,
+    deleteSubTask: deleteSubTask.mutate,
+    isCreating: createSubTask.isLoading,
+    isUpdating: updateSubTask.isLoading,
+    isDeleting: deleteSubTask.isLoading,
+    refetch,
+  }
+}
+
+export function useTaskDependencies(taskId: string) {
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, error, refetch } = useQuery(
+    ['dependencies', taskId],
+    () => api.getTaskDependencies(taskId),
+    {
+      enabled: !!taskId,
+      staleTime: 1000 * 60 * 5,
+    }
+  )
+
+  const createDependency = useMutation(
+    (dependencyData: { taskId: string; dependsOnId: string }) =>
+      api.createTaskDependency(dependencyData),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['dependencies', taskId])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to create dependency')
+      },
+    }
+  )
+
+  const deleteDependency = useMutation(
+    ({ taskId, dependsOnId }: { taskId: string; dependsOnId: string }) =>
+      api.deleteTaskDependency(taskId, dependsOnId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['dependencies', taskId])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to delete dependency')
+      },
+    }
+  )
+
+  return {
+    dependencies: data?.dependencies || [],
+    loading: isLoading,
+    error: error?.message || null,
+    createDependency: createDependency.mutate,
+    deleteDependency: deleteDependency.mutate,
+    isCreating: createDependency.isLoading,
+    isDeleting: deleteDependency.isLoading,
+    refetch,
+  }
+}
+
+export function useSettings() {
+  const queryClient = useQueryClient()
+
+  const { data, isLoading, error } = useQuery(
+    ['settings'],
+    () => api.getSettings(),
+    {
+      staleTime: 1000 * 60 * 5,
+    }
+  )
+
+  const updateSettingsMutation = useMutation(
+    (settings: any) => api.updateSettings(settings),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['settings'])
+      },
+      onError: (error: any) => {
+        toast.error(error.message || 'Failed to update settings')
+      },
+    }
+  )
+
+  // Default settings
+  const defaultSettings = {
+    theme: 'system',
+    language: 'en',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    dateFormat: 'MM/DD/YYYY',
+    timeFormat: '12h',
+    notifications: true,
+    emailNotifications: true,
+    desktopNotifications: true,
+    soundNotifications: false,
+    autoSave: true,
+    showCompleted: true,
+    compactMode: false,
+    weekStartsOn: '0',
+    defaultTaskView: 'list',
+    defaultSortBy: 'createdAt',
+    defaultSortOrder: 'desc',
+    dailyGoal: 5,
+    reminderTime: '09:00',
+    reminderEnabled: true,
+    keyboardShortcuts: true,
+    animationsEnabled: true,
+    calendarSync: {
+      google: false,
+      microsoft: false,
+    },
+    integrations: {
+      slack: true,
+      github: false,
+    },
+  }
+
+  const settings = { ...defaultSettings, ...(data?.settings || {}) }
+
+  return {
+    settings,
+    loading: isLoading,
+    error: error?.message || null,
+    updateSettings: updateSettingsMutation.mutate,
+    isUpdating: updateSettingsMutation.isLoading,
   }
 }
