@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Task, TaskStatus, Priority } from '@/src/types/index'
 import { api } from '@/lib/api-client'
 import { toast } from '@/src/hooks/useToast.tsx'
+import { useState, useCallback, useEffect } from 'react'
 
 export function useTasks(filters?: {
   listId?: string
@@ -418,5 +419,40 @@ export function useSettings() {
     error: error?.message || null,
     updateSettings: updateSettingsMutation.mutate,
     isUpdating: updateSettingsMutation.isLoading,
+  }
+}
+
+export function useMentions() {
+  const queryClient = useQueryClient()
+  const [mentions, setMentions] = useState([])
+
+  const fetchMentions = useCallback(async () => {
+    try {
+      const data = await api.getMentions()
+      setMentions(data.mentions || [])
+      return data
+    } catch (error) {
+      throw new Error('Failed to fetch mentions')
+    }
+  }, [])
+
+  const markAsRead = useCallback(async () => {
+    try {
+      await api.markMentionsAsRead()
+      setMentions([])
+    } catch (error) {
+      throw new Error('Failed to mark mentions as read')
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchMentions()
+  }, [fetchMentions])
+
+  return {
+    mentions,
+    unreadCount: mentions.filter(m => !m.read).length,
+    fetchMentions,
+    markAsRead,
   }
 }
