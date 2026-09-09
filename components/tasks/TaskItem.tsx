@@ -1,18 +1,13 @@
 "use client"
 
-import { TaskStatus, Priority, Task, List, Label } from '@/src/types/index'
+import { TaskStatus, Priority, Task, List, Label, SubTask, TaskDependency } from '@/src/types/index'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import CommentThread from '@/components/comments/CommentThread'
-
-interface TaskItemProps {
-  task: Task
-  onStatusChange: (taskId: string, newStatus: TaskStatus) => void
-  onPriorityChange: (taskId: string, newPriority: Priority) => void
-  onDelete: (taskId: string) => void
-  onCommentsOpen: (taskId: string) => void
-}
+import SubTaskItem from '@/components/tasks/SubTaskItem'
+import { useSubTasks } from '@/src/hooks/useTasks'
+import { useTaskDependencies } from '@/src/hooks/useTasks'
 
 const statusColors = {
   [TaskStatus.TODO]: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -32,6 +27,35 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
   const [title, setTitle] = useState(task.title)
   const [description, setDescription] = useState(task.description || '')
   const [showComments, setShowComments] = useState(false)
+  const [showSubtasks, setShowSubtasks] = useState(false)
+
+  const { subtasks, createSubTask, updateSubTask, deleteSubTask, isCreating } = useSubTasks(task.id)
+  const { dependencies, createDependency, deleteDependency } = useTaskDependencies(task.id)
+
+  const handleSubTaskCreate = () => {
+    if (window.confirm('Add a subtask?')) {
+      createSubTask({ title: 'New subtask', taskId: task.id })
+    }
+  }
+
+  const handleSubTaskUpdate = (subtaskId: string, updates: Partial<SubTask>) => {
+    updateSubTask({ taskId: task.id, subTaskId, updates })
+  }
+
+  const handleSubTaskDelete = (subtaskId: string) => {
+    deleteSubTask({ taskId: task.id, subTaskId })
+  }
+
+  const handleAddDependency = () => {
+    const dependsOnId = window.prompt('Enter the task ID this task depends on:')
+    if (dependsOnId) {
+      createDependency({ taskId: task.id, dependsOnId })
+    }
+  }
+
+  const handleRemoveDependency = (dependsOnId: string) => {
+    deleteDependency({ taskId: task.id, dependsOnId })
+  }
 
   const handleSave = async () => {
     setIsEditing(false)
@@ -152,6 +176,18 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
 
             <button
               onClick={() => {
+                setShowSubtasks(!showSubtasks)
+              }}
+              className="p-1 text-gray-400 hover:text-gray-600"
+              title="Toggle subtasks"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h6m-2 2v-4" />
+              </svg>
+            </button>
+
+            <button
+              onClick={() => {
                 onCommentsOpen(task.id)
                 setShowComments(true)
               }}
@@ -188,6 +224,47 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
                 {label.name}
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Subtasks Section */}
+        {subtasks.length > 0 && showSubtasks && (
+          <div className="mt-4 pl-2 border-l-2 border-gray-100">
+            {subtasks.map(subtask => (
+              <SubTaskItem
+                key={subtask.id}
+                subtask={subtask}
+                onUpdate={handleSubTaskUpdate}
+                onDelete={handleSubTaskDelete}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Dependencies Section */}
+        {dependencies.length > 0 && showSubtasks && (
+          <div className="mt-4 pl-2 border-l-2 border-yellow-100">
+            <p className="text-xs font-medium text-yellow-800 mb-2">Depends on:</p>
+            {dependencies.map(dep => (
+              <div key={dep.id} className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <span className="text-yellow-500">→</span>
+                <span className="font-mono text-xs">{dep.dependsOnId}</span>
+                <button
+                  onClick={() => handleRemoveDependency(dep.dependsOnId)}
+                  className="p-0.5 text-gray-400 hover:text-red-500"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={handleAddDependency}
+              className="mt-2 text-xs text-blue-600 hover:text-blue-700"
+            >
+              + Add dependency
+            </button>
           </div>
         )}
       </div>
