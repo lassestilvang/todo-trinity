@@ -3,91 +3,103 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
-// POST /api/integrations/calendar/sync - Trigger calendar sync
-export async function POST(request: NextRequest) {
+// GET /api/integrations/calendar/sync - Get calendar sync status
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to sync calendar' },
+        { error: 'Unauthorized', message: 'You must be signed in to view calendar sync' },
         { status: 401 }
       )
     }
 
     const userId = session.user.id
-    let body: any
+    const searchParams = request.nextUrl.searchParams
+    const provider = searchParams.get('provider') || 'google'
 
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON', message: 'Request body must be valid JSON' },
-        { status: 400 }
-      )
-    }
-
-    const { provider, force } = body
-
-    // Get the calendar sync record
-    const sync = await prisma.calendarSync.findFirst({
-      where: { userId, provider }
-    })
-
-    if (!sync) {
-      return NextResponse.json(
-        { error: 'Not Found', message: 'Calendar sync not found for this provider' },
-        { status: 404 }
-      )
-    }
-
-    // Only allow sync if enabled or forced
-    if (!sync.enabled && !force) {
-      return NextResponse.json(
-        { error: 'Forbidden', message: 'Calendar sync is disabled for this provider' },
-        { status: 403 }
-      )
-    }
-
-    // In a real implementation, this would trigger the actual sync process
-    // For now, we'll just update the last sync timestamp
-    const updatedSync = await prisma.calendarSync.update({
-      where: { id: sync.id },
-      data: {
-        lastSync: new Date(),
-        syncToken: force ? null : sync.syncToken, // Reset token if forced
+    // Get calendar sync configuration
+    const calendarSync = await prisma.calendarSync.findUnique({
+      where: { userId_provider: { userId, provider } },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        }
       }
     })
 
-    // TODO: Trigger actual calendar sync process in background
+    if (!calendarSync) {
+      // Return default status if no sync configured
+      return NextResponse.json({
+        status: 'idle',
+        enabled: false,
+        provider,
+        lastSync: null,
+        eventsSynced: 0,
+        upcomingEvents: 0,
+        integration: {
+          id: `${provider}-calendar`,
+          name: provider === 'google' ? 'Google Calendar' : 'Outlook Calendar',
+          type: 'calendar',
+          provider: provider,
+          color: provider === 'google' ? '#4285F4' : '#0078D4',
+          icon: '📅'
+        }
+      })
+    }
+
+    // Get recent synced events count
+    const lastSyncDate = calendarSync.lastSync ? new Date(calendarSync.lastSync) : null
+    const eventsSynced = lastSyncDate
+      ? await prisma.activityLog.count({
+          where: {
+            userId,
+            action: 'calendar_sync',
+            createdAt: { gte: lastSyncDate }
+          }
+        })
+      : 0
 
     return NextResponse.json({
-      message: 'Calendar sync triggered successfully',
-      sync: updatedSync
+      status: calendarSync.enabled ? 'synced' : 'idle',
+      enabled: calendarSync.enabled,
+      provider,
+      lastSync: calendarSync.lastSync,
+      eventsSynced,
+      upcomingEvents: 3, // Placeholder
+      integration: {
+        id: `${provider}-calendar`,
+        name: provider === 'google' ? 'Google Calendar' : 'Outlook Calendar',
+        type: 'calendar',
+        provider: provider,
+        color: provider === 'google' ? '#4285F4' : '#0078D4',
+        icon: '📅'
+      }
     })
   } catch (error) {
-    console.error('Error triggering calendar sync:', error)
+    console.error('Error fetching calendar sync:', error)
     return NextResponse.json(
-      { error: 'Failed to trigger calendar sync', message: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to fetch calendar sync', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
 }
 
-// PUT /api/integrations/calendar/sync/toggle - Enable/disable calendar sync
+// PUT /api/integrations/calendar/sync - Enable/disable calendar sync
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to update calendar sync' },
+        { error: 'Unauthorized', message: 'You must be signed in to configure calendar sync' },
         { status: 401 }
       )
     }
 
     const userId = session.user.id
-    let body: any
+    let body
 
     try {
       body = await request.json()
@@ -98,40 +110,70 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { provider, enabled } = body
+    const { enabled, provider } = body
 
-    if (provider === undefined || enabled === undefined) {
+    if (!provider) {
       return NextResponse.json(
-        { error: 'Bad Request', message: 'provider and enabled are required' },
+        { error: 'Bad Request', message: 'Provider is required' },
         { status: 400 }
       )
     }
 
-    const sync = await prisma.calendarSync.findFirst({
-      where: { userId, provider }
-    })
+    const normalizedProvider = provider === 'google' || provider === 'microsoft' ? provider : 'google'
 
-    if (!sync) {
-      return NextResponse.json(
-        { error: 'Not Found', message: 'Calendar sync not found for this provider' },
-        { status: 404 }
-      )
-    }
-
-    const updatedSync = await prisma.calendarSync.update({
-      where: { id: sync.id },
-      data: { enabled: Boolean(enabled) }
+    // Upsert calendar sync configuration
+    const calendarSync = await prisma.calendarSync.upsert({
+      where: { userId_provider: { userId, provider: normalizedProvider } },
+      create: {
+        userId,
+        provider: normalizedProvider,
+        enabled: enabled !== false, // Default to true
+        lastSync: new Date().toISOString(),
+        calendarId: null, // Would be set during auth
+        syncToken: null
+      },
+      update: {
+        enabled: enabled !== false,
+        lastSync: new Date().toISOString()
+      }
     })
 
     return NextResponse.json({
-      message: `Calendar sync ${enabled ? 'enabled' : 'disabled'} successfully`,
-      sync: updatedSync
+      message: `Calendar sync ${enabled ? 'enabled' : 'disabled'} for ${calendarSync.provider}`,
+      calendarSync
     })
   } catch (error) {
-    console.error('Error updating calendar sync:', error)
+    console.error('Error configuring calendar sync:', error)
     return NextResponse.json(
-      { error: 'Failed to update calendar sync', message: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to configure calendar sync', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
+  }
+}
+
+async function simulateCalendarSync(userId: string, provider: string) {
+  // Simulate fetching events from calendar API
+  const eventsFound = Math.floor(Math.random() * 20) // 0-19 events
+  const tasksCreated = Math.floor(Math.random() * eventsFound) // Some become tasks
+
+  // Create activity log entry
+  await prisma.activityLog.create({
+    data: {
+      userId,
+      action: 'calendar_sync',
+      resource: 'calendar',
+      resourceId: `${provider}_sync`,
+      details: JSON.stringify({ eventsFound, tasksCreated, provider }),
+      ipAddress: null,
+      userAgent: null
+    }
+  })
+
+  return {
+    eventsFound,
+    tasksCreated,
+    syncedEvents: await prisma.activityLog.count({
+      where: { userId, action: 'calendar_sync' }
+    })
   }
 }
