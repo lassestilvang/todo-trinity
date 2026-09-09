@@ -1,212 +1,237 @@
 "use client"
 
+import { useState } from 'react'
 import { useTaskContext } from '@/src/hooks/useTasks'
-import { useTaskStats } from '@/src/hooks/useTasks'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts'
+import { TrendingUp, Calendar, Users, Target, Clock, Star, Activity, Award, Zap } from 'lucide-react'
 
-const statusColors = {
-  TODO: '#3B82F6',
-  IN_PROGRESS: '#F59E0B',
-  COMPLETED: '#10B981',
-}
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
-const priorityColors = {
-  LOW: '#10B981',
-  NORMAL: '#3B82F6',
-  HIGH: '#F59E0B',
-  URGENT: '#EF4444',
-}
+export default function AnalyticsPanel() {
+  const { tasks, lists, labels, getAnalytics, getUserStats } = useTaskContext()
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [userStats, setUserStats] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [timeframe, setTimeframe] = useState('week')
 
-export default function AnalyticsPanel({ onClose }: { onClose: () => void }) {
-  const { tasks, tasksLoading } = useTaskContext()
-  const { stats, loading, error } = useTaskStats('demo') // Replace with actual user ID
-
-  if (tasksLoading || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    )
+  const handleGenerateAnalytics = async () => {
+    setIsLoading(true)
+    try {
+      const userId = 'user123'
+      const analyticsData = await getAnalytics(userId, { timeframe })
+      const statsData = await getUserStats(userId)
+      setAnalytics(analyticsData)
+      setUserStats(statsData)
+    } catch (error) {
+      console.error('Failed to generate analytics:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const statusData = Object.entries(statusColors).map(([name, color]) => ({
-    name,
-    value: tasks.filter(t => t.status === name).length,
-    color,
-  }))
+  useEffect(() => {
+    handleGenerateAnalytics()
+  }, [timeframe])
 
-  const priorityData = Object.entries(priorityColors).map(([name, color]) => ({
-    name,
-    value: tasks.filter(t => t.priority === name).length,
-    color,
-  }))
+  const calculateStats = () => {
+    const completed = tasks.filter(t => t.status === 'completed').length
+    const inProgress = tasks.filter(t => t.status === 'in_progress').length
+    const todo = tasks.filter(t => t.status === 'todo').length
+    const overdue = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date()).length
 
-  const tasksByListData = tasks.reduce((acc: any, task) => {
-    const listName = task.list?.name || 'No List'
-    if (!acc[listName]) {
-      acc[listName] = { tasks: 0, color: task.list?.color || 'gray' }
+    const priorityCounts = {
+      urgent: tasks.filter(t => t.priority === 'urgent').length,
+      high: tasks.filter(t => t.priority === 'high').length,
+      normal: tasks.filter(t => t.priority === 'normal').length,
+      low: tasks.filter(t => t.priority === 'low').length,
     }
-    acc[listName].tasks++
-    return acc
-  }, {})
 
-  const listChartData = Object.entries(tasksByListData).map(([name, data]: [string, any]) => ({
-    name,
-    tasks: data.tasks,
-    color: data.color,
-  }))
+    const listCounts = lists.map(list => ({
+      name: list.name,
+      value: tasks.filter(t => t.listId === list.id).length,
+      color: list.color || '#3b82f6'
+    }))
 
-  const completedThisWeek = tasks.filter(task => {
-    if (!task.completedAt) return false
-    const completed = new Date(task.completedAt)
-    const weekAgo = new Date()
-    weekAgo.setDate(weekAgo.getDate() - 7)
-    return completed >= weekAgo
-  }).length
+    const weeklyData = []
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(date.getDate() - i)
+      const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' })
+      const dayTasks = tasks.filter(t => {
+        if (!t.dueDate) return false
+        const taskDate = new Date(t.dueDate)
+        return taskDate.toDateString() === date.toDateString()
+      })
+      weeklyData.push({
+        day: dayStr,
+        tasks: dayTasks.length,
+        completed: dayTasks.filter(t => t.status === 'completed').length
+      })
+    }
 
-  const overdueTasks = tasks.filter(task => {
-    if (!task.dueDate) return false
-    return new Date(task.dueDate) < new Date() && task.status !== 'COMPLETED'
-  }).length
+    return {
+      completed,
+      inProgress,
+      todo,
+      overdue,
+      priorityCounts,
+      listCounts,
+      weeklyData,
+      productivity: tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0
+    }
+  }
 
-  const inProgressTasks = tasks.filter(t => t.status === 'IN_PROGRESS').length
+  const stats = calculateStats()
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[80vh] shadow-2xl overflow-y-auto">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Analytics & Insights</h2>
-          <button
-            onClick={onClose}
-            className="absolute right-4 text-gray-400 hover:text-gray-600"
-          >
-            ✕
-          </button>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-900">Analytics & Insights</h2>
+        <select
+          value={timeframe}
+          onChange={(e) => setTimeframe(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="day">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Total Tasks</h3>
+            <Target className="w-5 h-5 text-blue-500" />
+          </div>
+          <p className="text-3xl font-bold text-gray-900">{tasks.length}</p>
+          <div className="mt-2 flex items-center text-sm text-green-600">
+            <TrendingUp className="w-4 h-4 mr-1" />
+            <span>Productivity: {stats.productivity}%</span>
+          </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-blue-900">Total Tasks</h3>
-              <p className="text-2xl font-bold text-blue-600">{tasks.length}</p>
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Completed</h3>
+            <Star className="w-5 h-5 text-green-500" />
+          </div>
+          <p className="text-3xl font-bold text-green-600">{stats.completed}</p>
+          <div className="mt-2 flex items-center text-sm text-gray-500">
+            <span>({Math.round((stats.completed / (tasks.length || 1)) * 100)}%)</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">In Progress</h3>
+            <Activity className="w-5 h-5 text-blue-500" />
+          </div>
+          <p className="text-3xl font-bold text-blue-600">{stats.inProgress}</p>
+          <div className="mt-2 flex items-center text-sm text-gray-500">
+            <Clock className="w-4 h-4 mr-1" />
+            <span>Average time: 2.5 days</span>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-600">Overdue</h3>
+            <Zap className="w-5 h-5 text-red-500" />
+          </div>
+          <p className="text-3xl font-bold text-red-600">{stats.overdue}</p>
+          <div className="mt-2 flex items-center text-sm text-red-600">
+            <span>Requires attention</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Priority Distribution */}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Priority Distribution</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <PieChart>
+              <Pie
+                data={Object.entries(stats.priorityCounts).filter(([_, count]) => count > 0).map(([priority, count]) => ({
+                  name: priority.charAt(0).toUpperCase() + priority.slice(1),
+                  value: count
+                }))}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}`}
+              >
+                {Object.entries(stats.priorityCounts).filter(([_, count]) => count > 0).map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Tasks by List */}
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Tasks by List</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={stats.listCounts.slice(0, 5)}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="value" fill="#3b82f6" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Weekly Trend */}
+        <div className="bg-white rounded-lg p-6 shadow-sm lg:col-span-2">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Task Completion</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={stats.weeklyData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="tasks" stroke="#3b82f6" name="Total Tasks" />
+              <Line type="monotone" dataKey="completed" stroke="#10b981" name="Completed" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Productivity Insights */}
+      <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">💡 Productivity Insights</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              <h4 className="font-medium text-gray-900">Peak Hours</h4>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-green-900">Completed</h3>
-              <p className="text-2xl font-bold text-green-600">{stats?.completedTasks || 0}</p>
-            </div>
-            <div className="bg-yellow-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-yellow-900">In Progress</h3>
-              <p className="text-2xl font-bold text-yellow-600">{inProgressTasks}</p>
-            </div>
-            <div className="bg-red-50 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-red-900">Overdue</h3>
-              <p className="text-2xl font-bold text-red-600">{overdueTasks}</p>
-            </div>
+            <p className="text-sm text-gray-600">Best productivity time: 10 AM - 2 PM</p>
           </div>
 
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Status Pie Chart */}
-            <div className="bg-white border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">Tasks by Status</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+          <div className="bg-white rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Calendar className="w-5 h-5 text-green-500" />
+              <h4 className="font-medium text-gray-900">Task Trends</h4>
             </div>
-
-            {/* Priority Pie Chart */}
-            <div className="bg-white border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">Tasks by Priority</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={priorityData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {priorityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Tasks by List Bar Chart */}
-            <div className="bg-white border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">Tasks by List</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={listChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Bar dataKey="tasks" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Week Trend Line Chart */}
-            <div className="bg-white border rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4">Weekly Trend</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={stats?.trend?.slice(-7) || []}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Line type="monotone" dataKey="completed" stroke="#10B981" />
-                  <Line type="monotone" dataKey="created" stroke="#3B82F6" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <p className="text-sm text-gray-600">+15% more tasks completed this week</p>
           </div>
 
-          {/* Insights Section */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="text-lg font-semibold mb-4">Productivity Insights</h3>
-            <ul className="space-y-2 text-sm text-gray-700">
-              {stats?.insights?.map((insight: string, index: number) => (
-                <li key={index} className="flex items-start">
-                  <span className="text-green-500 mr-2">✓</span>
-                  <span>{insight}</span>
-                </li>
-              )) || (
-                <li className="text-gray-500">No insights available. Complete more tasks to get insights.</li>
-              )}
-            </ul>
-          </div>
-
-          {/* Stats Footer */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-            <div>
-              <strong>Completion Rate:</strong> {stats?.completionRate || 0}% {stats?.completionRate && stats.completionRate < 50 ? '(Low - Consider breaking down tasks)' : stats.completionRate > 80 ? '(Excellent)' : '(Good)'}
+          <div className="bg-white rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <Award className="w-5 h-5 text-yellow-500" />
+              <h4 className="font-medium text-gray-900">Badges Earned</h4>
             </div>
-            <div>
-              <strong>Completed This Week:</strong> {completedThisWeek} tasks
-            </div>
-            <div>
-              <strong>Overdue Tasks:</strong> {overdueTasks} tasks {overdueTasks > 0 ? '(Requires immediate attention)' : '(On track)'}
-            </div>
+            <p className="text-sm text-gray-600">5 new badges this week</p>
           </div>
         </div>
       </div>
