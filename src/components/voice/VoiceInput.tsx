@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTaskContext } from '@/src/hooks/useTasks'
 import { useSuggestions } from '@/src/hooks/useSuggestions'
-import { useToast } from '@/src/hooks/useToast'
+import { useToast } from '@/src/hooks/useToast.tsx'
 import { motion } from 'framer-motion'
 import { mic } from 'lucide-react'
 
