@@ -184,6 +184,8 @@ export interface TaskContextType {
   getTaskDependencies: (taskId: string) => Promise<{ dependencies: TaskDependency[] }>
   createDependency: (dependencyData: { taskId: string; dependsOnId: string }) => Promise<TaskDependency>
   deleteDependency: (taskId: string, dependsOnId: string) => Promise<void>
+  getMentions: () => Promise<{ mentions: any[] }>
+  markMentionsAsRead: () => Promise<{ message: string }>
 }
 
 export interface Notification {
@@ -195,4 +197,23 @@ export interface Notification {
   read: boolean
   createdAt: string
   userId: string
+}
+
+export interface Mention {
+  id: string
+  commentId: string
+  userId: string
+  read: boolean
+  createdAt: string
+  comment: {
+    id: string
+    content: string
+    taskId: string
+    createdAt: string
+    user: {
+      id: string
+      name: string
+      image?: string
+    }
+  }
 }
