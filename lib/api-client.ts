@@ -352,6 +352,87 @@ export const api = {
     const response = await fetch('/api/admin/workspaces')
     return handleResponse(response)
   },
+
+  // Subtasks
+  getSubTasks: async (taskId: string): Promise<{ subtasks: any[] }> => {
+    const response = await fetch(`/api/tasks/${taskId}/subtasks`)
+    return handleResponse(response)
+  },
+
+  createSubTask: async (subTaskData: { title: string; taskId: string }): Promise<{ subtask: any }> => {
+    const response = await fetch(`/api/tasks/${subTaskData.taskId}/subtasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subTaskData),
+    })
+    return handleResponse(response)
+  },
+
+  updateSubTask: async (taskId: string, subTaskId: string, updates: any): Promise<{ subtask: any }> => {
+    const response = await fetch(`/api/tasks/${taskId}/subtasks/${subTaskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    return handleResponse(response)
+  },
+
+  deleteSubTask: async (taskId: string, subTaskId: string): Promise<{ message: string }> => {
+    const response = await fetch(`/api/tasks/${taskId}/subtasks/${subTaskId}`, {
+      method: 'DELETE',
+    })
+    return handleResponse(response)
+  },
+
+  // Task Dependencies
+  getTaskDependencies: async (taskId: string): Promise<{ dependencies: any[] }> => {
+    const response = await fetch(`/api/task-dependencies?taskId=${taskId}`)
+    return handleResponse(response)
+  },
+
+  createTaskDependency: async (dependencyData: { taskId: string; dependsOnId: string }): Promise<{ dependency: any }> => {
+    const response = await fetch('/api/task-dependencies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dependencyData),
+    })
+    return handleResponse(response)
+  },
+
+  deleteTaskDependency: async (taskId: string, dependsOnId: string): Promise<{ message: string }> => {
+    const response = await fetch(`/api/task-dependencies?taskId=${taskId}&dependsOnId=${dependsOnId}`, {
+      method: 'DELETE',
+    })
+    return handleResponse(response)
+  },
+
+  // Saved Searches
+  getSavedSearches: async (): Promise<{ searches: any[] }> => {
+    const response = await fetch('/api/search/saved')
+    return handleResponse(response)
+  },
+
+  saveSearch: async (searchData: { name: string; filters?: any; query?: string }): Promise<{ search: any }> => {
+    const response = await fetch('/api/search/saved', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(searchData),
+    })
+    return handleResponse(response)
+  },
+
+  deleteSearch: async (name: string): Promise<{ message: string }> => {
+    const response = await fetch(`/api/search/saved?name=${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    })
+    return handleResponse(response)
+  },
+
+  // Task Analytics
+  getTaskAnalytics: async (taskId: string): Promise<any> => {
+    const response = await fetch(`/api/tasks/${taskId}/analytics`)
+    return handleResponse(response)
+  },
 }
 
 export default api
