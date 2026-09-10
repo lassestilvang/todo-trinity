@@ -77,6 +77,7 @@ export function useToast() {
 
   return {
     toast,
+    addToast: addToast,
     success,
     error,
     warning,
