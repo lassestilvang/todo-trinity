@@ -87,7 +87,7 @@ describe('app/api/user-reminders', () => {
       expect(body.reminders).toEqual([])
     })
 
-    it('should return today's reminders by default', async () => {
+    it("should return today's reminders by default", async () => {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
 
