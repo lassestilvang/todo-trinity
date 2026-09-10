@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { getRecentEvents } from '@/lib/realtime'
+import { getRecentEvents, getUserPresence } from '@/lib/realtime'
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,16 +14,26 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    const userId = session.user.id
+    const workspaceId = request.nextUrl.searchParams.get('workspaceId') || undefined
     const since = parseInt(request.nextUrl.searchParams.get('since') || '0', 10)
 
     const encoder = new TextEncoder()
     const stream = new ReadableStream({
       start(controller) {
         // Send any missed events first
-        const missedEvents = getRecentEvents(since)
+        const missedEvents = getRecentEvents(since, userId)
         if (missedEvents.length > 0) {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: 'sync', events: missedEvents })}\n\n`)
+          )
+        }
+
+        // Send current presence
+        const currentPresence = getUserPresence(workspaceId)
+        if (currentPresence.length > 0) {
+          controller.enqueue(
+            encoder.encode(`presence: ${JSON.stringify({ type: 'presence_update', users: currentPresence })}\n\n`)
           )
         }
 
