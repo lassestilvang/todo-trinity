@@ -175,13 +175,14 @@ describe('app/api/notifications', () => {
         userId: 'user-1',
       })
 
-      const request = new NextRequest('http://localhost:3000/api/notifications/notif-1', {
+      const request = new NextRequest('http://localhost:3000/api/notifications', {
         method: 'PUT',
         body: JSON.stringify({
+          id: 'notif-1',
           read: true,
         }),
       })
-      const response = await PUT(request, { params: Promise.resolve({ id: 'notif-1' }) })
+      const response = await PUT(request)
 
       expect(response.status).toBe(200)
       const body = await response.json()
@@ -207,10 +208,11 @@ describe('app/api/notifications', () => {
     it('should return 401 when not authenticated', async () => {
       ;(getServerSession as jest.Mock).mockResolvedValue(null)
 
-      const request = new NextRequest('http://localhost:3000/api/notifications/notif-1', {
+      const request = new NextRequest('http://localhost:3000/api/notifications', {
         method: 'DELETE',
+        body: JSON.stringify({ id: 'notif-1' }),
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'notif-1' }) })
+      const response = await DELETE(request)
 
       expect(response.status).toBe(401)
       const body = await response.json()
@@ -223,10 +225,11 @@ describe('app/api/notifications', () => {
     it('should delete a notification when authenticated', async () => {
       ;(prisma.notification.delete as jest.Mock).mockResolvedValue({})
 
-      const request = new NextRequest('http://localhost:3000/api/notifications/notif-1', {
+      const request = new NextRequest('http://localhost:3000/api/notifications', {
         method: 'DELETE',
+        body: JSON.stringify({ id: 'notif-1' }),
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'notif-1' }) })
+      const response = await DELETE(request)
 
       expect(response.status).toBe(200)
       const body = await response.json()
@@ -241,10 +244,11 @@ describe('app/api/notifications', () => {
     it('should only allow deletion of user\'s own notifications', async () => {
       ;(prisma.notification.findUnique as jest.Mock).mockResolvedValue(null)
 
-      const request = new NextRequest('http://localhost:3000/api/notifications/notif-1', {
+      const request = new NextRequest('http://localhost:3000/api/notifications', {
         method: 'DELETE',
+        body: JSON.stringify({ id: 'notif-1' }),
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'notif-1' }) })
+      const response = await DELETE(request)
 
       expect(response.status).toBe(404)
       const body = await response.json()
