@@ -1,6 +1,6 @@
 "use client"
 
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { useNotifications } from '@/src/hooks/useLists'
 
 export default function NotificationsPanel({ onClose }: { onClose: () => void }) {
