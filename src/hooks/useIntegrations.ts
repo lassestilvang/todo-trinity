@@ -72,6 +72,32 @@ export function useIntegrations(): UseIntegrationsResult {
     }
   )
 
+  // Mutation for triggering Zapier webhook
+  const zapierMutation = useMutation(
+    async (trigger: string, data: any) => {
+      const response = await fetch('/api/integrations/zapier/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trigger, data })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to trigger Zapier webhook')
+      }
+
+      return response.json()
+    },
+    {
+      onSuccess: () => {
+        setLoading(false)
+      },
+      onError: (err) => {
+        setError(err.message)
+        setLoading(false)
+      }
+    }
+  )
+
   // Mutation for disconnecting integrations
   const disconnectMutation = useMutation(
     async (provider: string) => {
@@ -156,6 +182,15 @@ export function useIntegrations(): UseIntegrationsResult {
     return integrationConfigs
   }, [])
 
+  const triggerZapierWebhook = useCallback(
+    async (trigger: string, data: any) => {
+      setLoading(true)
+      setError(null)
+      await zapierMutation.mutateAsync(trigger, data)
+    },
+    [zapierMutation]
+  )
+
   return {
     integrations: fetchedIntegrations || integrations,
     loading: fetchLoading || loading,
@@ -163,6 +198,7 @@ export function useIntegrations(): UseIntegrationsResult {
     connectIntegration,
     disconnectIntegration,
     syncIntegration,
-    getAvailableIntegrations
+    getAvailableIntegrations,
+    triggerZapierWebhook
   }
 }
