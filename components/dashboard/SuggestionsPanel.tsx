@@ -1,39 +1,41 @@
 "use client"
 
 import { useState } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { useSuggestions } from '@/src/hooks/useSuggestions'
-import { useParseNaturalLanguage } from '@/src/hooks/useSuggestions'
 import { useToast } from '@/src/hooks/useToast'
 
 export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
-  const { suggestions, loading } = useSuggestions('demo')
-  const { parse, parsed, loading: parseLoading } = useParseNaturalLanguage()
+  const { parseNaturalLanguage, isParsing, error } = useSuggestions()
   const { addToast } = useToast()
   const { tasks } = useTaskContext()
 
   const [input, setInput] = useState('')
   const [showParser, setShowParser] = useState(false)
-  const [proactiveSuggestions, setProactiveSuggestions] = useState([])
+  const [proactiveSuggestions, setProactiveSuggestions] = useState<any[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [parsedResult, setParsedResult] = useState<any>(null)
+  const [parseError, setParseError] = useState<string | null>(null)
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!input.trim()) return
 
     setShowParser(true)
+    setParseError(null)
 
-    parse(input, 'demo').then(result => {
-      if (result.error) {
-        addToast(result.error.message, 'error')
-      } else {
-        addToast('Task parsed successfully!', 'success')
-        // Create task from parsed data
-        parse(result.data?.parsed).then(() => {
-          setInput('')
-          setShowParser(false)
-        })
-      }
-    })
+    try {
+      const result = await parseNaturalLanguage(input)
+      setParsedResult(result)
+      addToast('Task parsed successfully!', 'success')
+
+      // Create task from parsed data
+      setInput('')
+      setShowParser(false)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to parse task'
+      setParseError(errorMessage)
+      addToast(errorMessage, 'error')
+    }
   }
 
   return (
@@ -53,15 +55,9 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
 
         <div className="p-6 space-y-6">
           {/* Quick Suggestions */}
-          {loading && (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            </div>
-          )}
-
-          {!loading && suggestions.length > 0 && (
+          {proactiveSuggestions.length > 0 && (
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {suggestions.slice(0, 5).map((suggestion: any, index: number) => (
+              {proactiveSuggestions.slice(0, 5).map((suggestion: any, index: number) => (
                 <div
                   key={index}
                   className={`
@@ -87,11 +83,11 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {!loading && suggestions.length === 0 ? (
+          {proactiveSuggestions.length === 0 && !isAnalyzing && (
             <p className="text-gray-500 text-sm text-center py-8">
               No suggestions available
             </p>
-          ) : null}
+          )}
 
           {/* Natural Language Parser */}
           <div>
@@ -103,14 +99,17 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="e.g. 'Buy groceries for tomorrow, high priority'"
                 className="w-full px-3 py-2 border rounded outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={parseLoading}
+                disabled={isParsing}
               />
+              {parseError && (
+                <p className="text-red-500 text-sm mt-2">{parseError}</p>
+              )}
               <button
                 onClick={handleSubmit}
-                className={`mt-2 px-4 py-2 rounded ${parseLoading ? 'opacity-50 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600 transition-colors'}`}
-                disabled={!input.trim() || parseLoading}
+                className={`mt-2 px-4 py-2 rounded ${isParsing ? 'opacity-50 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600 transition-colors'}`}
+                disabled={!input.trim() || isParsing}
               >
-                {parseLoading ? 'Parsing...' : 'Create Task'}
+                {isParsing ? 'Parsing...' : 'Create Task'}
               </button>
             </div>
           </div>
