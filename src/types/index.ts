@@ -165,6 +165,17 @@ export interface TaskContextType {
   labels: Label[]
   notifications: Notification[]
   loading: boolean
+  selectedStatus: TaskStatus
+  selectedPriority: Priority
+  selectedLabel: string
+  viewType: string
+  filters: {
+    listId?: string
+    status?: TaskStatus
+    priority?: Priority
+    search?: string
+    labelId?: string
+  }
   fetchTasks: () => Promise<void>
   createTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<Task>
   updateTask: (id: string, taskData: Partial<Task>) => Promise<Task>
@@ -186,6 +197,9 @@ export interface TaskContextType {
   deleteDependency: (taskId: string, dependsOnId: string) => Promise<void>
   getMentions: () => Promise<{ mentions: any[] }>
   markMentionsAsRead: () => Promise<{ message: string }>
+  setFilters: (filters: Partial<TaskContextType['filters']>) => void
+  getAnalytics: (taskId: string) => Promise<any>
+  getUserStats: (userId: string) => Promise<any>
 }
 
 export interface Notification {
