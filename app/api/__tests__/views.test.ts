@@ -125,14 +125,15 @@ describe('app/api/views', () => {
         updatedAt: new Date().toISOString(),
       })
 
-      const request = new NextRequest('http://localhost:3000/api/views/view-1', {
+      const request = new NextRequest('http://localhost:3000/api/views', {
         method: 'PUT',
         body: JSON.stringify({
+          id: 'view-1',
           name: 'Updated View',
           filters: { status: 'COMPLETED' },
         }),
       })
-      const response = await PUT(request, { params: Promise.resolve({ id: 'view-1' }) })
+      const response = await PUT(request)
 
       expect(response.status).toBe(200)
       const body = await response.json()
@@ -144,10 +145,11 @@ describe('app/api/views', () => {
     it('should delete a view when authenticated', async () => {
       ;(prisma.view.delete as jest.Mock).mockResolvedValue({})
 
-      const request = new NextRequest('http://localhost:3000/api/views/view-1', {
+      const request = new NextRequest('http://localhost:3000/api/views', {
         method: 'DELETE',
+        body: JSON.stringify({ id: 'view-1' }),
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'view-1' }) })
+      const response = await DELETE(request)
 
       expect(response.status).toBe(200)
       const body = await response.json()
