@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { useSuggestions } from '@/src/hooks/useSuggestions'
 import { useToast } from '@/src/hooks/useToast.tsx'
 import { motion } from 'framer-motion'
