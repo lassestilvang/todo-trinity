@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useWorkspaceContext } from '@/src/contexts/WorkspaceContext'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { Users, Edit, Plus, Trash2, CheckSquare, TrendingUp } from 'lucide-react'
 
 interface ActivityItem {
