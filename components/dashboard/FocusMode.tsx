@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { useToast } from '@/src/hooks/useToast'
 import { motion } from 'framer-motion'
 import { Timer, Play, Pause, Settings, X, Target, CheckCircle, Bell } from 'lucide-react'
