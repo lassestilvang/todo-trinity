@@ -28,7 +28,6 @@ export async function GET(request: Request) {
     const dependencies = await prisma.taskDependency.findMany({
       where: {
         taskId,
-        userId: session.user.id
       }
     })
 
@@ -99,7 +98,6 @@ export async function POST(request: Request) {
       where: {
         taskId,
         dependsOnId,
-        userId: session.user.id
       }
     })
 
@@ -123,7 +121,6 @@ export async function POST(request: Request) {
       data: {
         taskId,
         dependsOnId,
-        userId: session.user.id
       }
     })
 
@@ -165,7 +162,6 @@ export async function DELETE(request: Request) {
       where: {
         taskId,
         dependsOnId,
-        userId: session.user.id
       }
     })
 
@@ -202,7 +198,6 @@ async function checkCircularDependency(taskId: string, dependsOnId: string, user
     where: {
       taskId: dependsOnId,
       dependsOnId: taskId,
-      userId
     }
   })
 
