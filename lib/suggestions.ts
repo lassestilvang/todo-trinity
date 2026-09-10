@@ -108,7 +108,7 @@ export class EnhancedNLPParser {
     if (opts.extractContext) {
       const context = this.extractContext(processedText)
       if (context.length > 0) {
-        result.description += context.join(', ') + '\n'
+        result.task.description += context.join(', ') + '\n'
       }
     }
 
@@ -132,8 +132,8 @@ export class EnhancedNLPParser {
     result.task.title = this.cleanTaskTitle(processedText)
 
     // Add context to description
-    if (result.description) {
-      result.task.description = result.description.trim()
+    if (result.task.description) {
+      result.task.description = result.task.description.trim()
     }
 
     // Calculate confidence
@@ -360,4 +360,17 @@ export class EnhancedNLPParser {
 
     return Math.max(0, Math.min(100, confidence))
   }
+}
+
+// Wrapper functions for backward compatibility
+export async function getTaskSuggestions(userId: string): Promise<any[]> {
+  const parser = new EnhancedNLPParser()
+  // This is a placeholder - in a real implementation, this would fetch actual suggestions
+  // based on user's tasks, patterns, etc.
+  return []
+}
+
+export async function parseNaturalLanguage(text: string, userId: string): Promise<any> {
+  const parser = new EnhancedNLPParser()
+  return await parser.parseNaturalLanguage(text)
 }
