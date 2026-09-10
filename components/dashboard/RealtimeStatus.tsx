@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRealtimeNotifications } from '@/src/hooks/useRealtimeNotifications'
 import { Wifi, WifiOff, Users, Bell, CheckCircle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 export default function RealtimeStatus({ workspaceId }: { workspaceId?: string }) {
   const { unreadCount, isConnected, presence, notifications, markAllAsRead, clearNotifications } = useRealtimeNotifications(workspaceId)
