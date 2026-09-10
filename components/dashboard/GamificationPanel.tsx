@@ -1,6 +1,6 @@
 "use client"
 
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { useGamification } from '@/src/hooks/useTasks'
 
 export default function GamificationPanel({ onClose }: { onClose: () => void }) {
