@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts'
 import { TrendingUp, Calendar, Users, Target, Clock, Star, Activity, Award, Zap } from 'lucide-react'
 
