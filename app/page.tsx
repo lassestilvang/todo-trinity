@@ -1,7 +1,7 @@
 "use client"
 
 import { TaskProvider } from '@/src/contexts/TaskContext'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import DashboardContent from '@/components/dashboard/DashboardContent'
 import { ErrorBoundary } from '@/src/components/ui/ErrorBoundary'
 import { ToastContainer } from '@/src/hooks/useToast'
