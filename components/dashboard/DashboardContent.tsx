@@ -3,12 +3,16 @@
 import { useState } from 'react'
 import { TaskStatus, Priority } from '@/src/types/index'
 import { useTaskContext } from '@/src/hooks/useTasks'
+import WorkspacePresence from '@/components/workspace/WorkspacePresence'
+import { useWorkspaceContext } from '@/src/contexts/WorkspaceContext'
 import { useNotifications } from '@/src/hooks/useLists'
 import TaskList from '@/components/tasks/TaskList'
 import AddTask from '@/components/tasks/AddTask'
 import Sidebar from '@/components/layout/Sidebar'
 import ActivityPanel from '@/components/dashboard/ActivityPanel'
 import AnalyticsPanel from '@/components/dashboard/AnalyticsPanel'
+import ProductivityAnalytics from '@/components/dashboard/ProductivityAnalytics'
+import AITaskDecomposer from '@/components/dashboard/AITaskDecomposer'
 import SuggestionsPanel from '@/components/dashboard/SuggestionsPanel'
 import GamificationPanel from '@/components/dashboard/GamificationPanel'
 import NotificationsPanel from '@/components/dashboard/NotificationsPanel'
@@ -23,6 +27,7 @@ export default function DashboardContent() {
   const taskContext = useTaskContext()
   const notificationsContext = useNotifications()
   const [activeView, setActiveView] = useState('tasks')
+  const { workspaces, currentWorkspace } = useWorkspaceContext()
   const [showActivity, setShowActivity] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showGamification, setShowGamification] = useState(false)
@@ -32,6 +37,8 @@ export default function DashboardContent() {
   const [showSearch, setShowSearch] = useState(false)
   const [showFocusMode, setShowFocusMode] = useState(false)
   const [showMentions, setShowMentions] = useState(false)
+  const [showProductivityAnalytics, setShowProductivityAnalytics] = useState(false)
+  const [showAITaskDecomposer, setShowAITaskDecomposer] = useState(false)
 
   if (taskContext.loading) {
     return (
@@ -154,17 +161,32 @@ export default function DashboardContent() {
               >
                 Search
               </button>
+              {currentWorkspace && (
+                <WorkspacePresence workspaceId={currentWorkspace.id} />
+              )}
               <button
                 onClick={() => setShowMentions(!showMentions)}
                 className={`px-4 py-2 rounded ${showMentions ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'}`}
               >
-                Mentions
+                Mentions ({notificationsContext.notifications.filter(n => !n.read).length})
               </button>
               <button
                 onClick={() => setActiveView('analytics')}
                 className={`px-4 py-2 rounded ${activeView === 'analytics' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-700'}`}
               >
                 Analytics
+              </button>
+              <button
+                onClick={() => setShowProductivityAnalytics(!showProductivityAnalytics)}
+                className={`px-4 py-2 rounded ${showProductivityAnalytics ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Insights & Analytics
+              </button>
+              <button
+                onClick={() => setShowAITaskDecomposer(!showAITaskDecomposer)}
+                className={`px-4 py-2 rounded ${showAITaskDecomposer ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                AI Decompose
               </button>
               <button
                 onClick={() => setActiveView('notifications')}
@@ -212,6 +234,16 @@ export default function DashboardContent() {
         {showMentions && (
           <MentionsPanel
             onClose={() => setShowMentions(false)}
+          />
+        )}
+        {showProductivityAnalytics && (
+          <ProductivityAnalytics
+            onClose={() => setShowProductivityAnalytics(false)}
+          />
+        )}
+        {showAITaskDecomposer && (
+          <AITaskDecomposer
+            onClose={() => setShowAITaskDecomposer(false)}
           />
         )}
       </main>
