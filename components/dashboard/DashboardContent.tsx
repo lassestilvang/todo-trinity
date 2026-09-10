@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { TaskStatus, Priority } from '@/src/types/index'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import WorkspacePresence from '@/components/workspace/WorkspacePresence'
 import { useWorkspaceContext } from '@/src/contexts/WorkspaceContext'
 import { useNotifications } from '@/src/hooks/useLists'
@@ -22,6 +22,7 @@ import FocusMode from '@/components/dashboard/FocusMode'
 import CalendarView from '@/components/calendar/CalendarView'
 import GanttView from '@/components/views/GanttView'
 import KanbanBoard from '@/components/views/KanbanBoard'
+import RealtimeStatus from '@/components/dashboard/RealtimeStatus'
 
 export default function DashboardContent() {
   const taskContext = useTaskContext()
@@ -164,6 +165,7 @@ export default function DashboardContent() {
               {currentWorkspace && (
                 <WorkspacePresence workspaceId={currentWorkspace.id} />
               )}
+              <RealtimeStatus workspaceId={currentWorkspace?.id} />
               <button
                 onClick={() => setShowMentions(!showMentions)}
                 className={`px-4 py-2 rounded ${showMentions ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'}`}
