@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { TaskStatus } from '@/src/types/index'
 
 const monthNames = [
