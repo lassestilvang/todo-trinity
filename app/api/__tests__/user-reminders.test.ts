@@ -190,10 +190,11 @@ describe('app/api/user-reminders', () => {
     it('should return 401 when not authenticated', async () => {
       ;(getServerSession as jest.Mock).mockResolvedValue(null)
 
-      const request = new NextRequest('http://localhost:3000/api/user-reminders/reminder-1', {
+      const request = new NextRequest('http://localhost:3000/api/user-reminders', {
         method: 'DELETE',
+        body: JSON.stringify({ id: 'reminder-1' }),
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'reminder-1' }) })
+      const response = await DELETE(request)
 
       expect(response.status).toBe(401)
       const body = await response.json()
@@ -206,10 +207,11 @@ describe('app/api/user-reminders', () => {
     it('should delete reminder when authenticated', async () => {
       ;(prisma.task.update as jest.Mock).mockResolvedValue({})
 
-      const request = new NextRequest('http://localhost:3000/api/user-reminders/reminder-1', {
+      const request = new NextRequest('http://localhost:3000/api/user-reminders', {
         method: 'DELETE',
+        body: JSON.stringify({ id: 'reminder-1' }),
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'reminder-1' }) })
+      const response = await DELETE(request)
 
       expect(response.status).toBe(200)
       const body = await response.json()
