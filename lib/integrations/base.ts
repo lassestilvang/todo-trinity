@@ -157,5 +157,16 @@ export const integrationConfigs: IntegrationConfig[] = [
     icon: '📅',
     color: '#0078D4',
     description: 'Two-way sync with Microsoft Outlook Calendar'
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    type: 'automation',
+    provider: 'zapier',
+    authType: 'api_key',
+    scopes: ['*'],
+    icon: '⚡',
+    color: '#FF4D4F',
+    description: 'Connect with 5000+ apps via Zapier webhooks'
   }
 ]
