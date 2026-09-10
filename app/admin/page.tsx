@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { useIntegrations } from '@/src/hooks/useIntegrations'
 import { integrationConfigs } from '@/lib/integrations/base'
 import { AdminStats, AdminUser, AdminWorkspace } from '@/src/types/index'
