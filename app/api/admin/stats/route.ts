@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get system-wide statistics
-    const [userCount, taskCount, listCount, labelCount, workspaceCount, activeUsers, pendingInvitations, storageUsed] =
+    const [userCount, taskCount, listCount, labelCount, workspaceCount, activeUsers, pendingInvitations] =
       await Promise.all([
         prisma.user.count(),
         prisma.task.count(),
