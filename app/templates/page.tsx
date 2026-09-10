@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { useToast } from '@/src/hooks/useToast'
 import { Check, Clock, TrendingUp, Users, Briefcase, Heart, Coffee, BookOpen, Dumbbell, Music } from 'lucide-react'
 
