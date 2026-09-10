@@ -139,7 +139,7 @@ export async function DELETE(request: Request) {
 }
 
 // POST /api/integrations/:provider/sync - Sync a specific integration
-export async function POST(request: Request) {
+export async function POST_sync(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const provider = searchParams.get('provider')
@@ -194,7 +194,7 @@ export async function POST(request: Request) {
 }
 
 // GET /api/integrations/available - List available integrations
-export async function GET(request: Request) {
+export async function GET_available(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
