@@ -1,6 +1,6 @@
 "use client"
 
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { TaskStatus, Priority } from '@/src/types/index'
 
 interface KanbanColumn {
