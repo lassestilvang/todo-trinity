@@ -133,7 +133,8 @@ export function broadcastTaskComplete(task: any, userId?: string): void {
     userId?: string
     timestamp: number
   } = {
-    id: crypto.randomUUID(),n    type: 'task_completed',
+    id: crypto.randomUUID(),
+    type: 'task_completed',
     task: {
       id: task.id,
       title: task.title,
