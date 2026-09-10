@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from 'react'
-import { useTaskContext } from '@/src/hooks/useTasks'
+import { useTaskContext } from '@/src/contexts'
 import { Activity, TrendingUp, Clock, CheckSquare, Brain, BarChart3, AlertCircle, Lightbulb } from 'lucide-react'
 
 interface AnalyticsData {
