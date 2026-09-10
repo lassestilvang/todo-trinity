@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
-// GET /api/activity - Get activity logs for the current user
+// GET /api/activity - Get activity logs with filtering options
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -23,9 +23,40 @@ export async function GET(request: NextRequest) {
     const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0
     const action = searchParams.get('action')
     const resource = searchParams.get('resource')
+    const workspaceId = searchParams.get('workspaceId') // Optional workspace filter
+    const includeOthers = searchParams.get('includeOthers') === 'true' // Show team activities
 
     // Build where clause
-    const where: any = { userId }
+    const where: any = {}
+
+    if (includeOthers) {
+      // Show activities from user's workspace/team
+      const workspaceMembers = await prisma.workspaceMember.findMany({
+        where: { userId },
+        select: { workspaceId: true }
+      })
+
+      if (workspaceId) {
+        // Filter by specific workspace
+        where.workspaceId = workspaceId
+      } else if (workspaceMembers.length > 0) {
+        // Show activities from user's workspaces
+        const workspaceIds = workspaceMembers.map(m => m.workspaceId)
+        where.workspaceId = { in: workspaceIds }
+      } else {
+        // Fallback to user's own activities
+        where.userId = userId
+      }
+    } else {
+      // Only show user's own activities
+      where.userId = userId
+
+      // Add workspace filter if specified
+      if (workspaceId) {
+        where.workspaceId = workspaceId
+      }
+    }
+
     if (action) where.action = action
     if (resource) where.resource = resource
 
