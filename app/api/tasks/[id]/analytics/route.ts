@@ -51,13 +51,13 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
           const depTask = await prisma.task.findFirst({
             where: { id: dep.dependsOnId, userId }
           })
-          return depTask && depTask.complete
+          return depTask && depTask.completedAt
         })
       : false
 
     // Get time to complete (for completed tasks)
     let timeToComplete = null
-    if (task.complete && task.completedAt && task.createdAt) {
+    if (task.completedAt && task.createdAt) {
       const created = new Date(task.createdAt)
       const completed = new Date(task.completedAt)
       timeToComplete = Math.round((completed.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)) // days
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         priority: task.priority,
         status: task.status,
         hasDueDate: !!task.dueDate,
-        overdue: task.dueDate && !task.complete && new Date(task.dueDate) < new Date(),
+        overdue: task.dueDate && task.status !== 'COMPLETED' && new Date(task.dueDate) < new Date(),
         dependencyCount: dependencies.length
       }
     })
