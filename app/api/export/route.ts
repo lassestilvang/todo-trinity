@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
 
     if (format === 'pdf' && resourceType === 'tasks') {
       const pdfBuffer = await tasksToPDF(data.tasks as any[])
-      return new NextResponse(pdfBuffer, {
+      return new NextResponse(pdfBuffer as BodyInit, {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
 
       const pdfBytes = doc.output('arraybuffer')
       const buffer = Buffer.from(pdfBytes)
-      return new NextResponse(buffer, {
+      return new NextResponse(buffer as BodyInit, {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
