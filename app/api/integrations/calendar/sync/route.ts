@@ -123,13 +123,13 @@ export async function PUT(request: NextRequest) {
 
     // Upsert calendar sync configuration
     const calendarSync = await prisma.calendarSync.upsert({
-      where: { userId_provider: { userId, provider: normalizedProvider } },
+      where: { userId: userId, provider: normalizedProvider },
       create: {
         userId,
         provider: normalizedProvider,
         enabled: enabled !== false, // Default to true
         lastSync: new Date().toISOString(),
-        calendarId: null, // Would be set during auth
+        calendarId: '', // Temporary value, will be updated during auth
         syncToken: null
       },
       update: {
