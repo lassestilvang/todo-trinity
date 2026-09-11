@@ -328,6 +328,7 @@ model Backup {
   fileName     String
   fileSize     Int
   status       BackupStatus @default(PENDING)
+  type         String   @default("full")
   createdAt    DateTime @default(now())
   completedAt  DateTime?
 
@@ -387,4 +388,16 @@ model TemplateTask {
   templateId  String
 
   @@map("template_tasks")
+}
+
+model View {
+  id        String   @id @default(cuid())
+  name      String
+  filters   Json
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("views")
 }
