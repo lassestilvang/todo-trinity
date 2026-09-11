@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Task, TaskStatus, Priority } from '@/src/types/index'
+import { Task, TaskStatus, Priority, SubTask } from '@/src/types/index'
 import { api } from '@/lib/api-client'
-import { toast } from '@/src/hooks/useToast.tsx'
+import { toast } from '@/src/hooks/useToast'
 import { useState, useCallback, useEffect } from 'react'
 
 export function useTasks(filters?: {
@@ -15,163 +15,151 @@ export function useTasks(filters?: {
 }) {
   const queryClient = useQueryClient()
 
-  const { data, isLoading, error, refetch } = useQuery(
-    ['tasks', filters],
-    () => api.getTasks(filters),
-    {
-      select: (data: any) => data.tasks || [],
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error, refetch } = useQuery({
+    queryKey: ['tasks', filters ?? {}],
+    queryFn: () => api.getTasks(filters),
+    select: (data: any) => data.tasks || [],
+    staleTime: 1000 * 60 * 5,
+  })
 
-  const createTask = useMutation(
-    (taskData: any) => api.createTask(taskData),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['tasks'])
-        toast.success('Task created successfully')
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to create task')
-      },
-    }
-  )
+  const createTask = useMutation({
+    mutationFn: (taskData: any) => api.createTask(taskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      toast.success('Task created successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create task')
+    },
+  })
 
-  const updateTask = useMutation(
-    ({ id, updates }: { id: string; updates: Partial<Task> }) => api.updateTask(id, updates),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['tasks'])
-        toast.success('Task updated successfully')
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to update task')
-      },
-    }
-  )
+  const updateTask = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Task> }) => api.updateTask(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      toast.success('Task updated successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update task')
+    },
+  })
 
-  const deleteTask = useMutation(
-    (id: string) => api.deleteTask(id),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['tasks'])
-        toast.success('Task deleted successfully')
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to delete task')
-      },
-    }
-  )
+  const deleteTask = useMutation({
+    mutationFn: (id: string) => api.deleteTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      toast.success('Task deleted successfully')
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete task')
+    },
+  })
 
   return {
     tasks: data || [],
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
     createTask: createTask.mutate,
     updateTask: updateTask.mutate,
     deleteTask: deleteTask.mutate,
-    isCreating: createTask.isLoading,
-    isUpdating: updateTask.isLoading,
-    isDeleting: deleteTask.isLoading,
+    isCreating: createTask.isPending,
+    isUpdating: updateTask.isPending,
+    isDeleting: deleteTask.isPending,
     refetch,
   }
 }
 
 export function useTask(id: string) {
-  const { data, isLoading, error } = useQuery(
-    ['task', id],
-    () => api.getTask(id),
-    {
-      enabled: !!id,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['task', id],
+    queryFn: () => api.getTask(id),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  })
 
   return {
     task: data?.task || null,
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
   }
 }
 
 export function useTaskStats(userId: string) {
-  const { data, isLoading, error } = useQuery(
-    ['userStats', userId],
-    () => api.getUserStats(userId),
-    {
-      enabled: !!userId,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['userStats', userId],
+    queryFn: () => api.getUserStats(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  })
 
   return {
     stats: data || null,
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
   }
 }
 
 export function useGamification(userId: string) {
-  const { data, isLoading, error } = useQuery(
-    ['gamification', userId],
-    () => api.getGamification(userId),
-    {
-      enabled: !!userId,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['gamification', userId],
+    queryFn: () => api.getGamification(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  })
 
   return {
     gamification: data || null,
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
   }
 }
 
 export function useSuggestions(userId: string) {
-  const { data, isLoading, error } = useQuery(
-    ['suggestions', userId],
-    () => api.getSuggestions(userId),
-    {
-      enabled: !!userId,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['suggestions', userId],
+    queryFn: () => api.getSuggestions(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  })
 
   return {
     suggestions: data?.suggestions || [],
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
   }
 }
 
 export function useParseNaturalLanguage() {
-  const mutation = useMutation(
-    ({ text, userId }: { text: string; userId: string }) =>
-      api.parseNaturalLanguage(text, userId)
-  )
+  const mutation = useMutation({
+    mutationFn: ({ text, userId }: { text: string; userId: string }) =>
+      api.parseNaturalLanguage(text, userId),
+  })
 
   return {
     parse: mutation.mutate,
     parsed: mutation.data?.parsed || null,
-    loading: mutation.isLoading,
+    loading: mutation.isPending,
     error: mutation.error?.message || null,
   }
 }
 
 export function useSearch(query: string) {
-  const { data, isLoading, error } = useQuery(
-    ['search', query],
-    () => api.getSearch(query),
-    {
-      enabled: query.length > 0,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['search', query],
+    queryFn: () => api.getSearch(query),
+    enabled: query.length > 0,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const { data: listsData } = useQuery({
+    queryKey: ['lists'],
+    queryFn: () => api.getLists(),
+    staleTime: 1000 * 60 * 5,
+  })
 
   return {
-    results: data?.results || { tasks: [], lists, labels: [] },
-    loading: isLoading,
+    results: data?.results || { tasks: [], lists: listsData?.lists || [], labels: [] },
+    loading: isPending,
     error: error?.message || null,
   }
 }
@@ -179,63 +167,55 @@ export function useSearch(query: string) {
 export function useSavedSearches() {
   const queryClient = useQueryClient()
 
-  const { data, isLoading, error } = useQuery(
-    ['savedSearches'],
-    () => api.getSavedSearches(),
-    {
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['savedSearches'],
+    queryFn: () => api.getSavedSearches(),
+    staleTime: 1000 * 60 * 5,
+  })
 
-  const saveSearch = useMutation(
-    (searchData: { name: string; filters?: any; query?: string }) =>
+  const saveSearch = useMutation({
+    mutationFn: (searchData: { name: string; filters?: any; query?: string }) =>
       api.saveSearch(searchData),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['savedSearches'])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to save search')
-      },
-    }
-  )
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedSearches'] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to save search')
+    },
+  })
 
-  const deleteSearch = useMutation(
-    (name: string) => api.deleteSearch(name),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['savedSearches'])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to delete saved search')
-      },
-    }
-  )
+  const deleteSearch = useMutation({
+    mutationFn: (name: string) => api.deleteSearch(name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['savedSearches'] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete saved search')
+    },
+  })
 
   return {
     searches: data?.searches || [],
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
     saveSearch: saveSearch.mutate,
     deleteSearch: deleteSearch.mutate,
-    isSaving: saveSearch.isLoading,
-    isDeleting: deleteSearch.isLoading,
+    isSaving: saveSearch.isPending,
+    isDeleting: deleteSearch.isPending,
   }
 }
 
 export function useViews(viewType: string) {
-  const { data, isLoading, error } = useQuery(
-    ['views', viewType],
-    () => api.getViews(viewType),
-    {
-      enabled: !!viewType,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['views', viewType],
+    queryFn: () => api.getViews(viewType),
+    enabled: !!viewType,
+    staleTime: 1000 * 60 * 5,
+  })
 
   return {
     views: data || [],
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
   }
 }
@@ -243,64 +223,56 @@ export function useViews(viewType: string) {
 export function useSubTasks(taskId: string) {
   const queryClient = useQueryClient()
 
-  const { data, isLoading, error, refetch } = useQuery(
-    ['subtasks', taskId],
-    () => api.getSubTasks(taskId),
-    {
-      enabled: !!taskId,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error, refetch } = useQuery({
+    queryKey: ['subtasks', taskId],
+    queryFn: () => api.getSubTasks(taskId),
+    enabled: !!taskId,
+    staleTime: 1000 * 60 * 5,
+  })
 
-  const createSubTask = useMutation(
-    (subTaskData: { title: string; taskId: string }) =>
+  const createSubTask = useMutation({
+    mutationFn: (subTaskData: { title: string; taskId: string }) =>
       api.createSubTask(subTaskData),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['subtasks', taskId])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to create subtask')
-      },
-    }
-  )
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create subtask')
+    },
+  })
 
-  const updateSubTask = useMutation(
-    ({ taskId, subTaskId, updates }: { taskId: string; subTaskId: string; updates: Partial<SubTask> }) =>
+  const updateSubTask = useMutation({
+    mutationFn: ({ taskId, subTaskId, updates }: { taskId: string; subTaskId: string; updates: Partial<SubTask> }) =>
       api.updateSubTask(taskId, subTaskId, updates),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['subtasks', taskId])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to update subtask')
-      },
-    }
-  )
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update subtask')
+    },
+  })
 
-  const deleteSubTask = useMutation(
-    ({ taskId, subTaskId }: { taskId: string; subTaskId: string }) =>
+  const deleteSubTask = useMutation({
+    mutationFn: ({ taskId, subTaskId }: { taskId: string; subTaskId: string }) =>
       api.deleteSubTask(taskId, subTaskId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['subtasks', taskId])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to delete subtask')
-      },
-    }
-  )
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete subtask')
+    },
+  })
 
   return {
     subtasks: data?.subtasks || [],
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
     createSubTask: createSubTask.mutate,
     updateSubTask: updateSubTask.mutate,
     deleteSubTask: deleteSubTask.mutate,
-    isCreating: createSubTask.isLoading,
-    isUpdating: updateSubTask.isLoading,
-    isDeleting: deleteSubTask.isLoading,
+    isCreating: createSubTask.isPending,
+    isUpdating: updateSubTask.isPending,
+    isDeleting: deleteSubTask.isPending,
     refetch,
   }
 }
@@ -308,49 +280,43 @@ export function useSubTasks(taskId: string) {
 export function useTaskDependencies(taskId: string) {
   const queryClient = useQueryClient()
 
-  const { data, isLoading, error, refetch } = useQuery(
-    ['dependencies', taskId],
-    () => api.getTaskDependencies(taskId),
-    {
-      enabled: !!taskId,
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error, refetch } = useQuery({
+    queryKey: ['dependencies', taskId],
+    queryFn: () => api.getTaskDependencies(taskId),
+    enabled: !!taskId,
+    staleTime: 1000 * 60 * 5,
+  })
 
-  const createDependency = useMutation(
-    (dependencyData: { taskId: string; dependsOnId: string }) =>
+  const createDependency = useMutation({
+    mutationFn: (dependencyData: { taskId: string; dependsOnId: string }) =>
       api.createTaskDependency(dependencyData),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['dependencies', taskId])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to create dependency')
-      },
-    }
-  )
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dependencies', taskId] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create dependency')
+    },
+  })
 
-  const deleteDependency = useMutation(
-    ({ taskId, dependsOnId }: { taskId: string; dependsOnId: string }) =>
+  const deleteDependency = useMutation({
+    mutationFn: ({ taskId, dependsOnId }: { taskId: string; dependsOnId: string }) =>
       api.deleteTaskDependency(taskId, dependsOnId),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['dependencies', taskId])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to delete dependency')
-      },
-    }
-  )
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dependencies', taskId] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete dependency')
+    },
+  })
 
   return {
     dependencies: data?.dependencies || [],
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
     createDependency: createDependency.mutate,
     deleteDependency: deleteDependency.mutate,
-    isCreating: createDependency.isLoading,
-    isDeleting: deleteDependency.isLoading,
+    isCreating: createDependency.isPending,
+    isDeleting: deleteDependency.isPending,
     refetch,
   }
 }
@@ -358,25 +324,21 @@ export function useTaskDependencies(taskId: string) {
 export function useSettings() {
   const queryClient = useQueryClient()
 
-  const { data, isLoading, error } = useQuery(
-    ['settings'],
-    () => api.getSettings(),
-    {
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data, isPending, error } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => api.getSettings(),
+    staleTime: 1000 * 60 * 5,
+  })
 
-  const updateSettingsMutation = useMutation(
-    (settings: any) => api.updateSettings(settings),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['settings'])
-      },
-      onError: (error: any) => {
-        toast.error(error.message || 'Failed to update settings')
-      },
-    }
-  )
+  const updateSettingsMutation = useMutation({
+    mutationFn: (settings: any) => api.updateSettings(settings),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings'] })
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update settings')
+    },
+  })
 
   // Default settings
   const defaultSettings = {
@@ -415,10 +377,10 @@ export function useSettings() {
 
   return {
     settings,
-    loading: isLoading,
+    loading: isPending,
     error: error?.message || null,
     updateSettings: updateSettingsMutation.mutate,
-    isUpdating: updateSettingsMutation.isLoading,
+    isUpdating: updateSettingsMutation.isPending,
   }
 }
 
@@ -451,7 +413,7 @@ export function useMentions() {
 
   return {
     mentions,
-    unreadCount: mentions.filter(m => !m.read).length,
+    unreadCount: mentions.filter((m: any) => !m.read).length,
     fetchMentions,
     markAsRead,
   }
