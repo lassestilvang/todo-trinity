@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Integration, IntegrationConfig, integrationConfigs } from '@/lib/integrations/base'
 
@@ -20,34 +20,33 @@ export function useIntegrations(): UseIntegrationsResult {
   const [integrations, setIntegrations] = useState<Integration[]>([])
 
   // Fetch connected integrations
-  const { data: fetchedIntegrations, isLoading: fetchLoading, error: fetchError } = useQuery<
-    Integration[],
-    Error
-  >(['integrations'], async () => {
-    const response = await fetch('/api/integrations', {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    })
+  const { data: fetchedIntegrations, isPending: fetchLoading, error: fetchError } = useQuery({
+    queryKey: ['integrations'],
+    queryFn: async () => {
+      const response = await fetch('/api/integrations', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch integrations')
-    }
+      if (!response.ok) {
+        throw new Error('Failed to fetch integrations')
+      }
 
-    return response.json()
-  }, {
-    onSuccess: (data) => {
+      return response.json() as Integration[]
+    },
+    onSuccess: (data: Integration[]) => {
       setIntegrations(data)
       setError(null)
     },
-    onError: (err) => {
+    onError: (err: Error) => {
       setError(err.message)
       setIntegrations([])
     }
   })
 
   // Mutation for connecting integrations
-  const connectMutation = useMutation(
-    async ({ provider, credentials }: { provider: string; credentials: Record<string, any> }) => {
+  const connectMutation = useMutation({
+    mutationFn: async ({ provider, credentials }: { provider: string; credentials: Record<string, any> }) => {
       const response = await fetch('/api/integrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -60,25 +59,22 @@ export function useIntegrations(): UseIntegrationsResult {
 
       return response.json()
     },
-    {
-      onSuccess: () => {
-        // Refetch integrations on success
-        setLoading(false)
-      },
-      onError: (err) => {
-        setError(err.message)
-        setLoading(false)
-      }
+    onSuccess: () => {
+      setLoading(false)
+    },
+    onError: (err: Error) => {
+      setError(err.message)
+      setLoading(false)
     }
-  )
+  })
 
   // Mutation for triggering Zapier webhook
-  const zapierMutation = useMutation(
-    async (trigger: string, data: any) => {
+  const zapierMutation = useMutation({
+    mutationFn: async (data: { trigger: string; webhookData: any }) => {
       const response = await fetch('/api/integrations/zapier/webhook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trigger, data })
+        body: JSON.stringify(data)
       })
 
       if (!response.ok) {
@@ -87,20 +83,18 @@ export function useIntegrations(): UseIntegrationsResult {
 
       return response.json()
     },
-    {
-      onSuccess: () => {
-        setLoading(false)
-      },
-      onError: (err) => {
-        setError(err.message)
-        setLoading(false)
-      }
+    onSuccess: () => {
+      setLoading(false)
+    },
+    onError: (err: Error) => {
+      setError(err.message)
+      setLoading(false)
     }
-  )
+  })
 
   // Mutation for disconnecting integrations
-  const disconnectMutation = useMutation(
-    async (provider: string) => {
+  const disconnectMutation = useMutation({
+    mutationFn: async (provider: string) => {
       const response = await fetch('/api/integrations', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -113,21 +107,18 @@ export function useIntegrations(): UseIntegrationsResult {
 
       return response.json()
     },
-    {
-      onSuccess: () => {
-        // Refetch integrations on success
-        setLoading(false)
-      },
-      onError: (err) => {
-        setError(err.message)
-        setLoading(false)
-      }
+    onSuccess: () => {
+      setLoading(false)
+    },
+    onError: (err: Error) => {
+      setError(err.message)
+      setLoading(false)
     }
-  )
+  })
 
   // Mutation for syncing integrations
-  const syncMutation = useMutation(
-    async (provider: string) => {
+  const syncMutation = useMutation({
+    mutationFn: async (provider: string) => {
       const response = await fetch(`/api/integrations/${provider}/sync`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
@@ -139,17 +130,14 @@ export function useIntegrations(): UseIntegrationsResult {
 
       return response.json()
     },
-    {
-      onSuccess: () => {
-        // Refetch integrations on success
-        setLoading(false)
-      },
-      onError: (err) => {
-        setError(err.message)
-        setLoading(false)
-      }
+    onSuccess: () => {
+      setLoading(false)
+    },
+    onError: (err: Error) => {
+      setError(err.message)
+      setLoading(false)
     }
-  )
+  })
 
   const connectIntegration = useCallback(
     async (provider: string, credentials: Record<string, any>) => {
@@ -183,18 +171,18 @@ export function useIntegrations(): UseIntegrationsResult {
   }, [])
 
   const triggerZapierWebhook = useCallback(
-    async (trigger: string, data: any) => {
+    async (trigger: string, webhookData: any) => {
       setLoading(true)
       setError(null)
-      await zapierMutation.mutateAsync(trigger, data)
+      await zapierMutation.mutateAsync({ trigger, webhookData })
     },
     [zapierMutation]
   )
 
   return {
-    integrations: fetchedIntegrations || integrations,
+    integrations: Array.isArray(fetchedIntegrations) ? fetchedIntegrations : integrations,
     loading: fetchLoading || loading,
-    error: fetchError || error,
+    error: typeof fetchError === 'string' ? fetchError : (fetchError?.message || error),
     connectIntegration,
     disconnectIntegration,
     syncIntegration,
