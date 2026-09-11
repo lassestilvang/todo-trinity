@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         fileSize: 0, // Will be calculated when complete
         status: 'PROCESSING',
         type: type || 'full',
-      }
+      },
     })
 
     // TODO: Trigger background backup process
