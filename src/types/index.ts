@@ -65,6 +65,18 @@ export interface TaskDependency {
   dependsOn?: Task
 }
 
+export interface RecurringTask {
+  id: string
+  title: string
+  description?: string | null
+  schedule: string
+  isActive: boolean
+  taskId: string
+  createdAt: string
+  updatedAt: string
+  task?: Task
+}
+
 export interface List {
   id: string
   name: string
@@ -200,6 +212,10 @@ export interface TaskContextType {
   setFilters: (filters: Partial<TaskContextType['filters']>) => void
   getAnalytics: (taskId: string) => Promise<any>
   getUserStats: (userId: string) => Promise<any>
+  getRecurringTasks: () => Promise<{ recurringTasks: RecurringTask[] }>
+  createRecurringTask: (recurringTaskData: Omit<RecurringTask, 'id' | 'createdAt' | 'updatedAt' | 'taskId'> & { taskId: string }) => Promise<RecurringTask>
+  updateRecurringTask: (id: string, updates: Partial<RecurringTask>) => Promise<RecurringTask>
+  deleteRecurringTask: (id: string) => Promise<void>
 }
 
 export interface Notification {
