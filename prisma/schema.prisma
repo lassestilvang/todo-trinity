@@ -63,8 +63,24 @@ model Task {
   taskDependents    TaskDependency[] @relation("TaskDependent")
   assignedTo        User?    @relation("TaskAssignee", fields: [assignedToId], references: [id])
   assignedToId      String?
+  recurringTasks    RecurringTask[]
 
   @@map("tasks")
+}
+
+model RecurringTask {
+  id                String   @id @default(cuid())
+  title             String
+  description       String?
+  schedule          String   // Cron expression or natural language
+  isActive          Boolean  @default(true)
+  taskId            String   @unique
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  task              Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("recurring_tasks")
 }
 
 model SubTask {
