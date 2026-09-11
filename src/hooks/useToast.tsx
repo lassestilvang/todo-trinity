@@ -15,26 +15,28 @@ interface ToastState {
   clearToasts: () => void
 }
 
-export const useToastStore = create<ToastState>((set, get) => ({
-  toasts: [],
-  addToast: (message, type, duration = 5000) => {
-    const id = Math.random().toString(36).slice(2)
-    const toast: Toast = { id, message, type, duration }
-    set(state => ({ toasts: [...state.toasts, toast] }))
+export const useToastStore = create<ToastState>()(
+  (set, get) => ({
+    toasts: [],
+    addToast: (message: string, type: Toast['type'], duration = 5000) => {
+      const id = Math.random().toString(36).slice(2)
+      const toast: Toast = { id, message, type, duration }
+      set((state: ToastState) => ({ toasts: [...state.toasts, toast] }))
 
-    if (duration > 0) {
-      setTimeout(() => {
-        get().removeToast(id)
-      }, duration)
-    }
-  },
-  removeToast: (id) => {
-    set(state => ({ toasts: state.toasts.filter(t => t.id !== id) }))
-  },
-  clearToasts: () => {
-    set({ toasts: [] })
-  },
-}))
+      if (duration > 0) {
+        setTimeout(() => {
+          get().removeToast(id)
+        }, duration)
+      }
+    },
+    removeToast: (id: string) => {
+      set((state: ToastState) => ({ toasts: state.toasts.filter((t: Toast) => t.id !== id) }))
+    },
+    clearToasts: () => {
+      set(() => ({ toasts: [] }))
+    },
+  })
+)
 
 // Convenience hook
 export function useToast() {
