@@ -10,7 +10,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5,
-      cacheTime: 1000 * 60 * 10,
+      gcTime: 1000 * 60 * 10,
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -600,77 +600,6 @@ const api = {
     return response.json()
   },
 
-  getSubTasks: async (taskId: string) => {
-    const response = await fetch(`/api/tasks/${taskId}/subtasks`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch subtasks')
-    }
-    return response.json()
-  },
-
-  createSubTask: async (subTaskData: { title: string; taskId: string }) => {
-    const response = await fetch(`/api/tasks/${subTaskData.taskId}/subtasks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(subTaskData),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to create subtask')
-    }
-    return response.json()
-  },
-
-  updateSubTask: async (taskId: string, subTaskId: string, updates: Partial<SubTask>) => {
-    const response = await fetch(`/api/tasks/${taskId}/subtasks/${subTaskId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to update subtask')
-    }
-    return response.json()
-  },
-
-  deleteSubTask: async (taskId: string, subTaskId: string) => {
-    const response = await fetch(`/api/tasks/${taskId}/subtasks/${subTaskId}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to delete subtask')
-    }
-    return response.json()
-  },
-
-  getTaskDependencies: async (taskId: string) => {
-    const response = await fetch(`/api/task-dependencies?taskId=${taskId}`)
-    if (!response.ok) {
-      throw new Error('Failed to fetch dependencies')
-    }
-    return response.json()
-  },
-
-  createTaskDependency: async (dependencyData: { taskId: string; dependsOnId: string }) => {
-    const response = await fetch('/api/task-dependencies', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dependencyData),
-    })
-    if (!response.ok) {
-      throw new Error('Failed to create dependency')
-    }
-    return response.json()
-  },
-
-  deleteTaskDependency: async (taskId: string, dependsOnId: string) => {
-    const response = await fetch(`/api/task-dependencies?taskId=${taskId}&dependsOnId=${dependsOnId}`, {
-      method: 'DELETE',
-    })
-    if (!response.ok) {
-      throw new Error('Failed to delete dependency')
-    }
-    return response.json()
-  },
 
   getSavedSearches: async () => {
     const response = await fetch('/api/search/saved')
