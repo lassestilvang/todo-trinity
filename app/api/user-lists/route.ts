@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { listQuerySchema } from '@/lib/validations/list'
+import { listQuerySchema, createListSchema } from '@/lib/validations/list'
 import z from 'zod'
 
 export async function GET(request: NextRequest) {
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validated = listQuerySchema.parse(body)
+    const validated = createListSchema.parse(body)
 
     const list = await prisma.list.create({
       data: {
