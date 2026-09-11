@@ -3,17 +3,20 @@ import { integrationConfigs } from '@/lib/integrations/base'
 
 // POST /api/integrations/[provider]/sync - Sync a specific integration
 export async function POST(request: Request) {
+  let provider: string
   try {
     const { searchParams } = new URL(request.url)
     const syncType = searchParams.get('type') || 'full'
 
     // Find the integration config by provider from the URL path
     const { pathname } = new URL(request.url)
-    const provider = pathname.split('/')[3]
+    provider = pathname.split('/')[3]
 
+    let errorMessage = `Failed to sync integration`
     if (!provider) {
+      errorMessage = 'Provider parameter is required'
       return NextResponse.json(
-        { error: 'Provider parameter is required' },
+        { error: errorMessage },
         { status: 400 }
       )
     }
