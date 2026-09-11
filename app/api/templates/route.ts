@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [
-        { isCustom: false }, // System templates first
+        { isCustom: false as const }, // System templates first
         { name: 'asc' },
       ]
     })
