@@ -57,7 +57,7 @@ export function broadcastTaskCreate(task: any, userId?: string): void {
 
   // Update user presence
   if (userId) {
-    updateUserPresence(userId, 'online', new Date().getTime())
+    updateUserPresenceInternal(userId, 'online', new Date().getTime())
   }
 }
 
@@ -93,7 +93,7 @@ export function broadcastTaskUpdate(task: any, userId?: string): void {
 
   // Update user presence
   if (userId) {
-    updateUserPresence(userId, 'online', new Date().getTime())
+    updateUserPresenceInternal(userId, 'online', new Date().getTime())
   }
 }
 
@@ -120,7 +120,7 @@ export function broadcastTaskDelete(taskId: string, userId?: string): void {
 
   // Update user presence
   if (userId) {
-    updateUserPresence(userId, 'online', new Date().getTime())
+    updateUserPresenceInternal(userId, 'online', new Date().getTime())
   }
 }
 
@@ -152,7 +152,7 @@ export function broadcastTaskComplete(task: any, userId?: string): void {
 
   // Update user presence
   if (userId) {
-    updateUserPresence(userId, 'online', new Date().getTime())
+    updateUserPresenceInternal(userId, 'online', new Date().getTime())
   }
 }
 
@@ -183,11 +183,11 @@ export function broadcastTaskComment(task: any, userId?: string): void {
 
   // Update user presence
   if (userId) {
-    updateUserPresence(userId, 'online', new Date().getTime())
+    updateUserPresenceInternal(userId, 'online', new Date().getTime())
   }
 }
 
-function updateUserPresence(userId: string, status: 'online' | 'away' | 'offline', timestamp: number): void {
+function updateUserPresenceInternal(userId: string, status: 'online' | 'away' | 'offline', timestamp: number): void {
   const current = userPresence.get(userId)
 
   if (status === 'offline') {
@@ -198,6 +198,7 @@ function updateUserPresence(userId: string, status: 'online' | 'away' | 'offline
       userId,
       status,
       lastSeen: timestamp,
+      currentTasks: current?.currentTasks || [],
     })
   }
 
@@ -207,7 +208,7 @@ function updateUserPresence(userId: string, status: 'online' | 'away' | 'offline
 
 function cleanupInactiveUsers(): void {
   const now = Date.now()
-  for (const [userId, presence] of userPresence.entries()) {
+  Array.from(userPresence.entries()).forEach(([userId, presence]) => {
     if (presence.status === 'online' && now - presence.lastSeen > ACTIVITY_TIMEOUT) {
       userPresence.set(userId, {
         ...presence,
@@ -216,7 +217,7 @@ function cleanupInactiveUsers(): void {
     } else if (presence.status === 'away' && now - presence.lastSeen > ACTIVITY_TIMEOUT * 2) {
       userPresence.delete(userId)
     }
-  }
+  })
 }
 
 export function updateUserPresence(userId: string, page?: string, workspaceId?: string): void {
@@ -226,6 +227,7 @@ export function updateUserPresence(userId: string, page?: string, workspaceId?: 
     userId,
     status: 'online',
     lastSeen: Date.now(),
+    currentTasks: current?.currentTasks || [],
     page,
     workspaceId
   })
