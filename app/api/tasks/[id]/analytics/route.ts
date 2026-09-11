@@ -38,7 +38,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     })
 
     const subtaskCompletion = subtasks.length > 0
-      ? Math.round((subtasks.filter(s => s.complete).length / subtasks.length) * 100)
+      ? Math.round((subtasks.filter(s => s.completed).length / subtasks.length) * 100)
       : 0
 
     // Get dependencies and check if blocked
