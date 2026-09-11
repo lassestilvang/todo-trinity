@@ -406,6 +406,37 @@ export const api = {
     return handleResponse(response)
   },
 
+  // Recurring Tasks
+  getRecurringTasks: async (): Promise<{ recurringTasks: any[] }> => {
+    const response = await fetch('/api/recurring-tasks')
+    return handleResponse(response)
+  },
+
+  createRecurringTask: async (recurringTaskData: any): Promise<{ recurringTask: any }> => {
+    const response = await fetch('/api/recurring-tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(recurringTaskData),
+    })
+    return handleResponse(response)
+  },
+
+  updateRecurringTask: async (id: string, updates: any): Promise<{ recurringTask: any }> => {
+    const response = await fetch(`/api/recurring-tasks?id=${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    return handleResponse(response)
+  },
+
+  deleteRecurringTask: async (id: string): Promise<{ message: string }> => {
+    const response = await fetch(`/api/recurring-tasks?id=${id}`, {
+      method: 'DELETE',
+    })
+    return handleResponse(response)
+  },
+
   // Saved Searches
   getSavedSearches: async (): Promise<{ searches: any[] }> => {
     const response = await fetch('/api/search/saved')
