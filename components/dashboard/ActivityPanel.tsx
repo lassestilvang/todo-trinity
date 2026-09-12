@@ -1,9 +1,9 @@
 "use client"
 
 import { useTaskContext } from '@/src/contexts'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
-import { toast } from '@/src/hooks/useToast'
+import toast from '@/src/hooks/useToast'
 import { useEffect, useState } from 'react'
 
 interface ActivityLog {
@@ -18,14 +18,12 @@ interface ActivityLog {
 }
 
 export default function ActivityPanel({ onClose }: { onClose: () => void }) {
-  const { data: activityLogs, isLoading, error, refetch } = useQuery(
-    ['activity-logs'],
-    () => api.getAnalytics('', { limit: 50 }),
-    {
-      select: (data: any) => data.activity || [],
-      staleTime: 1000 * 60 * 5,
-    }
-  )
+  const { data: activityLogs, isLoading, error, refetch } = useQuery({
+    queryKey: ['activity-logs'],
+    queryFn: () => api.getAnalytics('', { limit: 50 }),
+    select: (data: any) => data.activity || [],
+    staleTime: 1000 * 60 * 5,
+  })
 
   const [filter, setFilter] = useState({ action: '', resource: '' })
 
@@ -33,7 +31,7 @@ export default function ActivityPanel({ onClose }: { onClose: () => void }) {
     setFilter(filter)
   }
 
-  if (data.loading || isLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
