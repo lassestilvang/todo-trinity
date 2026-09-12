@@ -123,7 +123,7 @@ export async function PUT(request: NextRequest) {
 
     // Upsert calendar sync configuration
     const calendarSync = await prisma.calendarSync.upsert({
-      where: { userId: userId, provider: normalizedProvider },
+      where: { userId_provider: { userId, provider: normalizedProvider } },
       create: {
         userId,
         provider: normalizedProvider,
