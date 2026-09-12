@@ -171,6 +171,48 @@ const api = {
     return response.json()
   },
 
+  getRecurringTasks: async () => {
+    const response = await fetch('/api/recurring-tasks')
+    if (!response.ok) {
+      throw new Error('Failed to fetch recurring tasks')
+    }
+    return response.json()
+  },
+
+  createRecurringTask: async (recurringTaskData: { title: string; description?: string; schedule: string; taskId: string }) => {
+    const response = await fetch('/api/recurring-tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(recurringTaskData),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to create recurring task')
+    }
+    return response.json()
+  },
+
+  updateRecurringTask: async (id: string, updates: { title?: string; description?: string; schedule?: string; isActive?: boolean }) => {
+    const response = await fetch(`/api/recurring-tasks?id=${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to update recurring task')
+    }
+    return response.json()
+  },
+
+  deleteRecurringTask: async (id: string) => {
+    const response = await fetch(`/api/recurring-tasks?id=${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new Error('Failed to delete recurring task')
+    }
+    return response.json()
+  },
+
   createList: async (listData: { name: string; color?: string; icon?: string }) => {
     const response = await fetch('/api/lists', {
       method: 'POST',
@@ -802,70 +844,60 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   )
 
   // Mutations
-  const createTaskMutation = useMutation(
-    (taskData: any) => api.createTask(taskData),
-    {
-      onSuccess: (newTask) => {
-        queryClient.invalidateQueries(['tasks'])
-        dispatch({ type: 'ADD_TASK', payload: newTask.task })
-      },
-      onError: (error) => {
-        dispatch({ type: 'SET_ERROR', payload: error.message })
-      },
-    }
-  )
+  const createTaskMutation = useMutation({
+    mutationFn: (taskData: any) => api.createTask(taskData),
+    onSuccess: (newTask) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      dispatch({ type: 'ADD_TASK', payload: newTask.task })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
 
-  const updateTaskMutation = useMutation(
-    ({ id, updates }: { id: string; updates: Partial<Task> }) => api.updateTask(id, updates),
-    {
-      onSuccess: (updatedTask) => {
-        queryClient.invalidateQueries(['tasks'])
-        dispatch({ type: 'UPDATE_TASK', payload: updatedTask.task })
-      },
-      onError: (error) => {
-        dispatch({ type: 'SET_ERROR', payload: error.message })
-      },
-    }
-  )
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Task> }) => api.updateTask(id, updates),
+    onSuccess: (updatedTask) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      dispatch({ type: 'UPDATE_TASK', payload: updatedTask.task })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
 
-  const deleteTaskMutation = useMutation(
-    (id: string) => api.deleteTask(id),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['tasks'])
-        dispatch({ type: 'DELETE_TASK', payload: id })
-      },
-      onError: (error) => {
-        dispatch({ type: 'SET_ERROR', payload: error.message })
-      },
-    }
-  )
+  const deleteTaskMutation = useMutation({
+    mutationFn: (id: string) => api.deleteTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      dispatch({ type: 'DELETE_TASK', payload: id })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
 
-  const createListMutation = useMutation(
-    (listData: any) => api.createList(listData),
-    {
-      onSuccess: (newList) => {
-        queryClient.invalidateQueries(['lists'])
-        dispatch({ type: 'ADD_LIST', payload: newList.list })
-      },
-      onError: (error) => {
-        dispatch({ type: 'SET_ERROR', payload: error.message })
-      },
-    }
-  )
+  const createListMutation = useMutation({
+    mutationFn: (listData: any) => api.createList(listData),
+    onSuccess: (newList) => {
+      queryClient.invalidateQueries({ queryKey: ['lists'] })
+      dispatch({ type: 'ADD_LIST', payload: newList.list })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
 
-  const createLabelMutation = useMutation(
-    (labelData: any) => api.createLabel(labelData),
-    {
-      onSuccess: (newLabel) => {
-        queryClient.invalidateQueries(['labels'])
-        dispatch({ type: 'ADD_LABEL', payload: newLabel.label })
-      },
-      onError: (error) => {
-        dispatch({ type: 'SET_ERROR', payload: error.message })
-      },
-    }
-  )
+  const createLabelMutation = useMutation({
+    mutationFn: (labelData: any) => api.createLabel(labelData),
+    onSuccess: (newLabel) => {
+      queryClient.invalidateQueries({ queryKey: ['labels'] })
+      dispatch({ type: 'ADD_LABEL', payload: newLabel.label })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
 
   // Action creators
   const fetchTasks = useCallback(async (filters?: any) => {
@@ -907,6 +939,42 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     (labelData: any) => createLabelMutation.mutate(labelData),
     [createLabelMutation]
   )
+
+  const getRecurringTasksQuery = useQuery({
+    queryKey: ['recurringTasks'],
+    queryFn: () => api.getRecurringTasks(),
+    select: (data: any) => data.recurringTasks || [],
+  })
+
+  const createRecurringTaskMutation = useMutation({
+    mutationFn: (recurringTaskData: any) => api.createRecurringTask(recurringTaskData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurringTasks'] })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
+
+  const updateRecurringTaskMutation = useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<RecurringTask> }) => api.updateRecurringTask(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurringTasks'] })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
+
+  const deleteRecurringTaskMutation = useMutation({
+    mutationFn: (id: string) => api.deleteRecurringTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recurringTasks'] })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
 
   const updateList = useCallback(async (id: string, listData: Partial<List>) => {
     const result = await api.updateList(id, listData)
@@ -966,6 +1034,31 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     await api.deleteTaskDependency(taskId, dependsOnId)
   }, [])
 
+  const getRecurringTasks = useCallback(async () => {
+    const result = await getRecurringTasksQuery.refetch()
+    return result.data
+  }, [getRecurringTasksQuery])
+
+  const createRecurringTask = useCallback((recurringTaskData: { title: string; description?: string; schedule: string; taskId: string }) => {
+    createRecurringTaskMutation.mutate(recurringTaskData)
+  }, [createRecurringTaskMutation])
+
+  const updateRecurringTask = useCallback((id: string, updates: { title?: string; description?: string; schedule?: string; isActive?: boolean }) => {
+    updateRecurringTaskMutation.mutate({ id, updates })
+  }, [updateRecurringTaskMutation])
+
+  const deleteRecurringTask = useCallback((id: string) => {
+    deleteRecurringTaskMutation.mutate(id)
+  }, [deleteRecurringTaskMutation])
+
+  const getMentions = useCallback(async () => {
+    return await api.getMentions()
+  }, [])
+
+  const markMentionsAsRead = useCallback(async () => {
+    return await api.markMentionsAsRead()
+  }, [])
+
   // Set up listeners for state changes
   useEffect(() => {
     if (tasksData) {
@@ -1019,6 +1112,10 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     deleteDependency,
     getMentions,
     markMentionsAsRead,
+    getRecurringTasks,
+    createRecurringTask,
+    updateRecurringTask,
+    deleteRecurringTask,
   }
 
   return (
