@@ -177,6 +177,7 @@ export interface TaskContextType {
   labels: Label[]
   notifications: Notification[]
   loading: boolean
+  selectedList: string
   selectedStatus: TaskStatus
   selectedPriority: Priority
   selectedLabel: string
@@ -212,9 +213,9 @@ export interface TaskContextType {
   setFilters: (filters: Partial<TaskContextType['filters']>) => void
   getAnalytics: (taskId: string) => Promise<any>
   getUserStats: (userId: string) => Promise<any>
-  getRecurringTasks: () => Promise<{ recurringTasks: RecurringTask[] }>
-  createRecurringTask: (recurringTaskData: Omit<RecurringTask, 'id' | 'createdAt' | 'updatedAt' | 'taskId'> & { taskId: string }) => Promise<RecurringTask>
-  updateRecurringTask: (id: string, updates: Partial<RecurringTask>) => Promise<RecurringTask>
+  getRecurringTasks: () => Promise<RecurringTask[]>
+  createRecurringTask: (recurringTaskData: Omit<RecurringTask, 'id' | 'createdAt' | 'updatedAt' | 'taskId'> & { taskId: string }) => Promise<void>
+  updateRecurringTask: (id: string, updates: Partial<RecurringTask>) => Promise<void>
   deleteRecurringTask: (id: string) => Promise<void>
 }
 
