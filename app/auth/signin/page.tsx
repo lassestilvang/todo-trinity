@@ -3,29 +3,36 @@
 import { useState } from 'react'
 import { useUser } from '@/src/contexts'
 import { useRouter } from 'next/navigation'
+import { api } from '@/lib/api-client'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const { login, loading } = useUser()
+  const { login } = useUser()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
     if (!email || !password) {
       setError('Please fill in all fields')
+      setLoading(false)
       return
     }
 
     try {
-      await login({ email, password })
+      const result = await api.login({ email, password })
+      login(result.user)
       router.push('/')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid credentials')
+    } finally {
+      setLoading(false)
     }
   }
 
