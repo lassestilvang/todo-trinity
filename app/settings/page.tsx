@@ -17,11 +17,12 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   }
 
   if (error) {
+    const errorMessage = typeof error === 'string' ? error : error.message
     return (
       <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
         <div className="bg-white rounded-xl p-6 max-w-sm">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Error</h2>
-          <p className="text-gray-600 mb-4">{error.message}</p>
+          <p className="text-gray-600 mb-4">{errorMessage}</p>
           <button onClick={onClose} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-500">
             Close
           </button>
@@ -88,14 +89,16 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             </label>
             <div className="grid grid-cols-2 gap-2 mb-4">
               {['google-calendar', 'outlook-calendar', 'github', 'slack', 'notion', 'zapier'].map((integration) => {
-                const config = {
+                const configMap: Record<string, { name: string; enabled: boolean }> = {
                   'google-calendar': { name: 'Google Calendar', enabled: settings.calendarSync?.google || false },
                   'outlook-calendar': { name: 'Outlook Calendar', enabled: settings.calendarSync?.microsoft || false },
                   'github': { name: 'GitHub', enabled: settings.integrations?.github || false },
                   'slack': { name: 'Slack', enabled: settings.integrations?.slack || false },
                   'notion': { name: 'Notion', enabled: false },
                   'zapier': { name: 'Zapier', enabled: settings.integrations?.zapier || false },
-                }[integration]
+                }
+
+                const config = configMap[integration] || { name: integration, enabled: false }
 
                 return (
                   <label key={integration} className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
