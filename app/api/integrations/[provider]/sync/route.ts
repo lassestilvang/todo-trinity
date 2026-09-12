@@ -3,7 +3,7 @@ import { integrationConfigs } from '@/lib/integrations/base'
 
 // POST /api/integrations/[provider]/sync - Sync a specific integration
 export async function POST(request: Request) {
-  let provider: string
+  let provider: string | undefined
   try {
     const { searchParams } = new URL(request.url)
     const syncType = searchParams.get('type') || 'full'
