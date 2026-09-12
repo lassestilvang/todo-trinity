@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import { TaskStatus, Priority } from '@/src/types/index'
 import { useTaskContext } from '@/src/contexts'
 import { useToast } from '@/src/hooks/useToast'
 import { Sparkles, Loader2, Check, X, Brain, Clock, ListOrdered, Trash2 } from 'lucide-react'
@@ -9,7 +10,7 @@ interface SubTask {
   title: string
   description?: string
   estimatedMinutes: number
-  priority: 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT'
+  priority: Priority
 }
 
 interface DecompositionResult {
