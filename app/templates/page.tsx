@@ -122,8 +122,9 @@ export default function TemplatesPage() {
         await createTask({
           title: taskData.title,
           description: `Imported from template: ${template.name}`,
-          status: 'TODO',
-          priority: taskData.priority as any,
+          status: TaskStatus.TODO,
+          priority: taskData.priority as Priority,
+          labels: [],
         })
       }
       addToast(`Applied template: ${template.name}`, 'success')
