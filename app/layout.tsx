@@ -7,8 +7,8 @@ import { TaskProvider } from '@/src/contexts/TaskContext'
 import { UserProvider } from '@/src/contexts/UserContext'
 import { ErrorBoundary } from '@/src/components/ui/ErrorBoundary'
 import { ToastContainer } from '@/src/hooks/useToast'
-import { PWARegister } from '@/src/components/pwa/PWARegister'
-import { VoiceInput } from '@/src/components/voice/VoiceInput'
+import PWARegister from '@/src/components/pwa/PWARegister'
+import VoiceInput from '@/src/components/voice/VoiceInput'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -80,7 +80,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#3b82f6" />
         <meta name="background-color" content="#ffffff" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={inter.className}>
         <QueryClientProvider client={queryClient}>
