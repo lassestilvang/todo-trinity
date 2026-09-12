@@ -56,7 +56,7 @@ export default function DashboardContent() {
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold mb-4">Tasks</h2>
-              <AddTask onCreate={taskContext.createTask} labels={taskContext.labels} />
+              <AddTask onCreate={(taskData: any) => taskContext.createTask({...taskData, labels: []})} />
               <br />
               <TaskList
                 tasks={taskContext.tasks}
