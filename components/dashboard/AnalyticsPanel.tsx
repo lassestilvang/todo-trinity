@@ -8,7 +8,7 @@ import { TrendingUp, Calendar, Users, Target, Clock, Star, Activity, Award, Zap 
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
-export default function AnalyticsPanel() {
+export default function AnalyticsPanel({ onClose }: { onClose?: () => void }) {
   const { tasks, lists, labels, getAnalytics, getUserStats } = useTaskContext()
   const [analytics, setAnalytics] = useState<any>(null)
   const [userStats, setUserStats] = useState<any>(null)
