@@ -221,7 +221,12 @@ function cleanupInactiveUsers(): void {
 }
 
 export function updateUserPresence(userId: string, page?: string, workspaceId?: string): void {
-  const current = userPresence.get(userId) || {}
+  const current = userPresence.get(userId) || {
+    userId,
+    status: 'online' as const,
+    lastSeen: Date.now(),
+    currentTasks: [],
+  }
   userPresence.set(userId, {
     ...current,
     userId,
@@ -254,7 +259,7 @@ export function getUserPresence(workspaceId?: string): Array<{
   userId: string
   status: 'online' | 'away' | 'offline'
   lastSeen: number
-  currentTasks: string[]
+  currentTasks?: string[]
   workspaceId?: string
   page?: string
 }> {
@@ -271,7 +276,7 @@ export function getUserPresenceByUserId(userId: string): {
   userId: string
   status: 'online' | 'away' | 'offline'
   lastSeen: number
-  currentTasks: string[]
+  currentTasks?: string[]
   workspaceId?: string
   page?: string
 } | undefined {
