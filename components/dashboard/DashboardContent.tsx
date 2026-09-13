@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { TaskStatus, Priority } from '@/src/types/index'
+import { TaskStatus, Priority, Notification } from '@/src/types/index'
 import { useTaskContext } from '@/src/contexts'
 import WorkspacePresence from '@/components/workspace/WorkspacePresence'
 import { useWorkspaceContext } from '@/src/contexts/WorkspaceContext'
@@ -62,6 +62,7 @@ export default function DashboardContent() {
                 tasks={taskContext.tasks}
                 onUpdate={taskContext.updateTask}
                 onDelete={taskContext.deleteTask}
+                onCommentsOpen={(taskId: string) => console.log('Open comments for task:', taskId)}
               />
             </div>
           </div>
@@ -170,7 +171,7 @@ export default function DashboardContent() {
                 onClick={() => setShowMentions(!showMentions)}
                 className={`px-4 py-2 rounded ${showMentions ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'}`}
               >
-                Mentions ({notificationsContext.notifications.filter(n => !n.read).length})
+                Mentions ({notificationsContext.notifications.filter((n: Notification) => !n.read).length})
               </button>
               <button
                 onClick={() => setActiveView('analytics')}
