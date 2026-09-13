@@ -57,8 +57,8 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
       const mainTask = await createTask({
         title: decomposedTask.title,
         description: decomposedTask.description,
-        status: 'TODO',
-        priority: 'NORMAL',
+        status: TaskStatus.TODO,
+        priority: Priority.NORMAL,
       })
 
       // Create subtasks
@@ -66,7 +66,7 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
         await createTask({
           title: subtask.title,
           description: subtask.description,
-          status: 'TODO',
+          status: TaskStatus.TODO,
           priority: subtask.priority,
         })
       }
