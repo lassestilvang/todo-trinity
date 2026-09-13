@@ -17,11 +17,12 @@ export default function GamificationPanel({ onClose }: { onClose: () => void }) 
   }
 
   if (error) {
+    const errorMessage = typeof error === 'string' ? error : error.message
     return (
       <div className="fixed inset-0 bg-black/60 z-50 flex items-center p-4">
         <div className="bg-white rounded-xl p-6 max-w-md">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Error Loading Gamification</h2>
-          <p className="text-gray-600 mb-4">{error.message}</p>
+          <p className="text-gray-600 mb-4">{errorMessage}</p>
           <button onClick={onClose} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
             Close
           </button>
@@ -67,11 +68,11 @@ export default function GamificationPanel({ onClose }: { onClose: () => void }) 
               <p className="text-2xl font-bold text-blue-600">{gamification.currentStreak} days</p>
             </div>
             <div className="bg-green-50 rounded-lg p-4">
-              <h3 class="text-sm font-medium text-green-900">Longest Streak</h3>
+              <h3 className="text-sm font-medium text-green-900">Longest Streak</h3>
               <p className="text-2xl font-bold text-green-600">{gamification.longestStreak} days</p>
             </div>
             <div className="bg-purple-50 rounded-lg p-4">
-              <h3 class="text-sm font-medium text-purple-900">Daily Goal Progress</h3>
+              <h3 className="text-sm font-medium text-purple-900">Daily Goal Progress</h3>
               <div className="flex items-center space-x-2">
                 <div className="w-20 h-2 bg-gray-200 rounded-full">
                   <div
