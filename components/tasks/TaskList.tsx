@@ -6,9 +6,10 @@ interface TaskListProps {
   tasks: Task[]
   onUpdate: (taskId: string, updates: Partial<Task>) => void
   onDelete: (taskId: string) => void
+  onCommentsOpen: (taskId: string) => void
 }
 
-export default function TaskList({ tasks, onUpdate, onDelete }: TaskListProps) {
+export default function TaskList({ tasks, onUpdate, onDelete, onCommentsOpen }: TaskListProps) {
   const [filter, setFilter] = useState({
     status: TaskStatus.TODO as TaskStatus,
     priority: Priority.NORMAL as Priority,
@@ -86,6 +87,7 @@ export default function TaskList({ tasks, onUpdate, onDelete }: TaskListProps) {
             onStatusChange={handleStatusChange}
             onPriorityChange={handlePriorityChange}
             onDelete={handleDelete}
+            onCommentsOpen={onCommentsOpen}
           />
         ))
       )}
