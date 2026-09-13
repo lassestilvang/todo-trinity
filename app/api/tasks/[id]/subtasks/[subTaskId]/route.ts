@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { SubTask } from '@/src/types/index'
 
 // PATCH /api/tasks/[id]/subtasks/[subTaskId] - Update a subtask
-export async function PATCH(request: Request, { params }: { params: { id: string; subTaskId: string } }) {
+export async function PATCH(request: Request, context: { params: Promise<{ id: string; subTaskId: string }> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -16,14 +16,15 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       )
     }
 
+    const { id, subTaskId } = await context.params
     const body = await request.json()
     const updates = body
 
     // Verify the subtask belongs to the user and task
     const subtask = await prisma.subTask.findFirst({
       where: {
-        id: params.subTaskId,
-        taskId: params.id,
+        id: subTaskId,
+        taskId: id,
         userId: session.user.id
       }
     })
@@ -37,7 +38,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
     const updatedSubtask = await prisma.subTask.update({
       where: {
-        id: params.subTaskId
+        id: subTaskId
       },
       data: {
         ...updates,
@@ -56,7 +57,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 }
 
 // DELETE /api/tasks/[id]/subtasks/[subTaskId] - Delete a subtask
-export async function DELETE(request: Request, { params }: { params: { id: string; subTaskId: string } }) {
+export async function DELETE(request: Request, context: { params: Promise<{ id: string; subTaskId: string }> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -67,11 +68,13 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
       )
     }
 
+    const { id, subTaskId } = await context.params
+
     // Verify the subtask belongs to the user and task
     const subtask = await prisma.subTask.findFirst({
       where: {
-        id: params.subTaskId,
-        taskId: params.id,
+        id: subTaskId,
+        taskId: id,
         userId: session.user.id
       }
     })
@@ -85,7 +88,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
 
     await prisma.subTask.delete({
       where: {
-        id: params.subTaskId
+        id: subTaskId
       }
     })
 
