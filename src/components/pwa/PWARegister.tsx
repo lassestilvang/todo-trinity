@@ -31,9 +31,7 @@ export default function PWARegister() {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               setUpdateAvailable(true)
-              addToast('New version available! Click to refresh', 'info', () => {
-                window.location.reload()
-              })
+              addToast('New version available! Click to refresh', 'info', 0)
             }
           })
         }
@@ -61,7 +59,8 @@ export default function PWARegister() {
   const setupPeriodicSync = async () => {
     if (swRegistration && 'periodicSync' in swRegistration) {
       try {
-        await swRegistration.periodicSync.register('check-reminders', {
+        // @ts-ignore - Periodic Background Sync API types may not be fully typed
+        await (swRegistration.periodicSync as any).register('check-reminders', {
           minInterval: 60 * 60 * 1000 // 1 hour
         })
       } catch (error) {
