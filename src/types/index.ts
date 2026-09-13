@@ -177,6 +177,7 @@ export interface TaskContextType {
   labels: Label[]
   notifications: Notification[]
   loading: boolean
+  error: string | null
   selectedList: string
   selectedStatus: TaskStatus
   selectedPriority: Priority
@@ -190,32 +191,32 @@ export interface TaskContextType {
     labelId?: string
   }
   fetchTasks: () => Promise<void>
-  createTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<Task>
-  updateTask: (id: string, taskData: Partial<Task>) => Promise<Task>
+  createTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>
+  updateTask: (id: string, taskData: Partial<Task>) => Promise<void>
   deleteTask: (id: string) => Promise<void>
-  createList: (listData: Omit<List, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<List>
-  updateList: (id: string, listData: Partial<List>) => Promise<List>
+  createList: (listData: Omit<List, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>
+  updateList: (id: string, listData: Partial<List>) => Promise<void>
   deleteList: (id: string) => Promise<void>
-  createLabel: (labelData: Omit<Label, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<Label>
-  updateLabel: (id: string, labelData: Partial<Label>) => Promise<Label>
+  createLabel: (labelData: Omit<Label, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => Promise<void>
+  updateLabel: (id: string, labelData: Partial<Label>) => Promise<void>
   deleteLabel: (id: string) => Promise<void>
-  createNotification: (notificationData: Omit<Notification, 'id' | 'createdAt' | 'userId'>) => Promise<Notification>
+  createNotification: (notificationData: Omit<Notification, 'id' | 'createdAt' | 'userId'>) => Promise<void>
   markNotificationAsRead: (id: string) => Promise<void>
   getSubTasks: (taskId: string) => Promise<{ subtasks: SubTask[] }>
-  createSubTask: (subTaskData: { title: string; taskId: string }) => Promise<SubTask>
-  updateSubTask: (taskId: string, subTaskId: string, updates: Partial<SubTask>) => Promise<SubTask>
+  createSubTask: (subTaskData: { title: string; taskId: string }) => Promise<void>
+  updateSubTask: (taskId: string, subTaskId: string, updates: Partial<SubTask>) => Promise<void>
   deleteSubTask: (taskId: string, subTaskId: string) => Promise<void>
   getTaskDependencies: (taskId: string) => Promise<{ dependencies: TaskDependency[] }>
-  createDependency: (dependencyData: { taskId: string; dependsOnId: string }) => Promise<TaskDependency>
+  createDependency: (dependencyData: { taskId: string; dependsOnId: string }) => Promise<void>
   deleteDependency: (taskId: string, dependsOnId: string) => Promise<void>
   getMentions: () => Promise<{ mentions: any[] }>
   markMentionsAsRead: () => Promise<{ message: string }>
   setFilters: (filters: Partial<TaskContextType['filters']>) => void
-  getAnalytics: (taskId: string) => Promise<any>
+  getAnalytics: (userId: string, params?: any) => Promise<any>
   getUserStats: (userId: string) => Promise<any>
   getRecurringTasks: () => Promise<RecurringTask[]>
-  createRecurringTask: (recurringTaskData: Omit<RecurringTask, 'id' | 'createdAt' | 'updatedAt' | 'taskId'> & { taskId: string }) => Promise<void>
-  updateRecurringTask: (id: string, updates: Partial<RecurringTask>) => Promise<void>
+  createRecurringTask: (recurringTaskData: { title: string; description?: string; schedule: string; taskId: string }) => Promise<void>
+  updateRecurringTask: (id: string, updates: { title?: string; description?: string; schedule?: string; isActive?: boolean }) => Promise<void>
   deleteRecurringTask: (id: string) => Promise<void>
 }
 
