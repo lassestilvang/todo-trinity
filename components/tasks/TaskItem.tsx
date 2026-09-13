@@ -22,6 +22,14 @@ const priorityColors = {
   [Priority.URGENT]: 'bg-red-100 text-red-800 border-red-300',
 }
 
+interface TaskItemProps {
+  task: Task
+  onStatusChange: (status: TaskStatus) => void
+  onPriorityChange: (priority: Priority) => void
+  onDelete: () => void
+  onCommentsOpen: () => void
+}
+
 export default function TaskItem({ task, onStatusChange, onPriorityChange, onDelete, onCommentsOpen }: TaskItemProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(task.title)
@@ -39,11 +47,11 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
   }
 
   const handleSubTaskUpdate = (subtaskId: string, updates: Partial<SubTask>) => {
-    updateSubTask({ taskId: task.id, subTaskId, updates })
+    updateSubTask({ taskId: task.id, subTaskId: subtaskId, updates })
   }
 
   const handleSubTaskDelete = (subtaskId: string) => {
-    deleteSubTask({ taskId: task.id, subTaskId })
+    deleteSubTask({ taskId: task.id, subTaskId: subtaskId })
   }
 
   const handleAddDependency = () => {
@@ -211,7 +219,7 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
 
         {task.labels.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {task.labels.map(label => (
+            {task.labels.map((label: Label) => (
               <span
                 key={label.id}
                 className={cn(
