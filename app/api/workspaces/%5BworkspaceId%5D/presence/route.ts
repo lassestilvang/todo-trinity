@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
-export async function GET(request: NextRequest, { params }: { params: { workspaceId: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<Record<string, string>> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { workspac
       )
     }
 
-    const workspaceId = params.workspaceId
+    const { workspaceId } = await context.params
 
     // Verify user has access to the workspace
     const workspaceMember = await prisma.workspaceMember.findFirst({
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest, { params }: { params: { workspac
   }
 }
 
-export async function POST(request: NextRequest, { params }: { params: { workspaceId: string } }) {
+export async function POST(request: NextRequest, context: { params: Promise<Record<string, string>> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: { workspa
       )
     }
 
-    const workspaceId = params.workspaceId
+    const { workspaceId } = await context.params
 
     // Verify user has access to the workspace
     const workspaceMember = await prisma.workspaceMember.findFirst({
