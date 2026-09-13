@@ -24,10 +24,10 @@ const priorityColors = {
 
 interface TaskItemProps {
   task: Task
-  onStatusChange: (status: TaskStatus) => void
-  onPriorityChange: (priority: Priority) => void
-  onDelete: () => void
-  onCommentsOpen: () => void
+  onStatusChange: (taskId: string, status: TaskStatus) => void
+  onPriorityChange: (taskId: string, priority: Priority) => void
+  onDelete: (taskId: string) => void
+  onCommentsOpen: (taskId: string) => void
 }
 
 export default function TaskItem({ task, onStatusChange, onPriorityChange, onDelete, onCommentsOpen }: TaskItemProps) {
