@@ -17,12 +17,11 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
   }
 
   if (error) {
-    const errorMessage = typeof error === 'string' ? error : error.message
     return (
       <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
         <div className="bg-white rounded-xl p-6 max-w-sm">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Error</h2>
-          <p className="text-gray-600 mb-4">{errorMessage}</p>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button onClick={onClose} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-500">
             Close
           </button>
