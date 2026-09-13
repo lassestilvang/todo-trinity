@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTaskContext } from '@/src/contexts'
 import { useSuggestions } from '@/src/hooks/useSuggestions'
-import { useToast } from '@/src/hooks/useToast.tsx'
+import { TaskStatus, Priority } from '@/src/types/index'
+import { useToast } from '@/src/hooks/useToast'
 import { motion } from 'framer-motion'
-import { mic } from 'lucide-react'
+import { Mic } from 'lucide-react'
 
 interface VoiceInputProps {
   onTaskCreated?: (task: any) => void
@@ -49,9 +50,9 @@ export default function VoiceInput({ onTaskCreated }: VoiceInputProps) {
     }
 
     recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results)
-        .map(result => result[0])
-        .map(result => result.transcript)
+      const transcript = Array.from(event.results as any[])
+        .map((result: any) => result[0])
+        .map((result: any) => result.transcript)
         .join('')
 
       setTranscript(transcript)
@@ -86,27 +87,27 @@ export default function VoiceInput({ onTaskCreated }: VoiceInputProps) {
       }
 
       // Create the task
-      const newTask = await createTask({
+      await createTask({
         title: result.task.title,
-        description: result.task.description,
-        status: result.task.status,
-        priority: result.task.priority,
+        description: result.task.description as string | null,
+        status: result.task.status as unknown as TaskStatus,
+        priority: result.task.priority as unknown as Priority,
         dueDate: result.task.dueDate,
         listId: result.task.listId,
-        labelIds: result.task.labelIds
+        labels: []
       })
 
       setSuggestions(result.suggestions)
       setConfidence(result.confidence)
 
       // Provide feedback
-      addToast(`Task created: "${newTask.task.title}"`, 'success')
+      addToast('Task created successfully', 'success')
 
       // Refresh tasks
       await fetchTasks()
 
       if (onTaskCreated) {
-        onTaskCreated(newTask.task)
+        onTaskCreated(result.task)
       }
     } catch (err: any) {
       setError(err.message || 'Failed to process voice command')
@@ -149,14 +150,14 @@ export default function VoiceInput({ onTaskCreated }: VoiceInputProps) {
         >
           {isListening ? (
             <motion.div
-              while={{ rotate: [0, 360] }}
+              animate={{ rotate: [0, 360] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
               className="w-6 h-6"
             >
-              <mic className="w-5 h-5 text-white" />
+              <Mic className="w-5 h-5 text-white" />
             </motion.div>
           ) : (
-            <mic className="w-5 h-5 text-white" />
+            <Mic className="w-5 h-5 text-white" />
           )}
         </button>
 
