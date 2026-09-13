@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth'
 import { SubTask } from '@/src/types/index'
 
 // GET /api/tasks/[id]/subtasks - Get all subtasks for a task
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -16,9 +16,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
       )
     }
 
+    const { id } = await context.params
+
     const subtasks = await prisma.subTask.findMany({
       where: {
-        taskId: params.id,
+        taskId: id,
         userId: session.user.id
       },
       orderBy: { createdAt: 'asc' }
@@ -35,7 +37,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 // POST /api/tasks/[id]/subtasks - Create a new subtask
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -46,6 +48,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       )
     }
 
+    const { id } = await context.params
     const body = await request.json()
     const { title } = body
 
@@ -59,7 +62,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     // Verify the task belongs to the user
     const task = await prisma.task.findFirst({
       where: {
-        id: params.id,
+        id,
         userId: session.user.id
       }
     })
@@ -74,7 +77,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     const subtask = await prisma.subTask.create({
       data: {
         title,
-        taskId: params.id,
+        taskId: id,
         userId: session.user.id
       }
     })
