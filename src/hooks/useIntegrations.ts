@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Integration, IntegrationConfig, integrationConfigs } from '@/lib/integrations/base'
 
@@ -12,6 +12,7 @@ interface UseIntegrationsResult {
   disconnectIntegration: (provider: string) => Promise<void>
   syncIntegration: (provider: string) => Promise<void>
   getAvailableIntegrations: () => IntegrationConfig[]
+  triggerZapierWebhook: (trigger: string, webhookData: any) => Promise<void>
 }
 
 export function useIntegrations(): UseIntegrationsResult {
@@ -20,29 +21,38 @@ export function useIntegrations(): UseIntegrationsResult {
   const [integrations, setIntegrations] = useState<Integration[]>([])
 
   // Fetch connected integrations
-  const { data: fetchedIntegrations, isPending: fetchLoading, error: fetchError } = useQuery({
-    queryKey: ['integrations'],
-    queryFn: async () => {
-      const response = await fetch('/api/integrations', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      })
+  const { data: fetchedIntegrations, isPending: fetchLoading, error: fetchError } = useQuery<Integration[]>(
+    {
+      queryKey: ['integrations'],
+      queryFn: async () => {
+        const response = await fetch('/api/integrations', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        })
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch integrations')
+        if (!response.ok) {
+          throw new Error('Failed to fetch integrations')
+        }
+
+        return response.json()
       }
+    }
+  )
 
-      return response.json() as Integration[]
-    },
-    onSuccess: (data: Integration[]) => {
-      setIntegrations(data)
+  useEffect(() => {
+    if (fetchedIntegrations) {
+      setIntegrations(fetchedIntegrations)
       setError(null)
-    },
-    onError: (err: Error) => {
-      setError(err.message)
+    }
+  }, [fetchedIntegrations])
+
+  useEffect(() => {
+    if (fetchError) {
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Failed to fetch integrations'
+      setError(errorMessage)
       setIntegrations([])
     }
-  })
+  }, [fetchError])
 
   // Mutation for connecting integrations
   const connectMutation = useMutation({
