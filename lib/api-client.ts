@@ -482,20 +482,6 @@ export const api = {
     return handleResponse(response)
   },
 
-  getIntegrations: async (): Promise<any> => {
-    const response = await fetch('/api/integrations')
-    return handleResponse(response)
-  },
-
-  updateIntegrations: async (integrations: any): Promise<any> => {
-    const response = await fetch('/api/integrations', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(integrations)
-    })
-    return handleResponse(response)
-  },
-
   // Task Analytics
   getTaskAnalytics: async (taskId: string): Promise<any> => {
     const response = await fetch(`/api/tasks/${taskId}/analytics`)
