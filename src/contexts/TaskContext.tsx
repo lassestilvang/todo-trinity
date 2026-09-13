@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode, useReducer, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Task, List, Label, User, TaskStatus, Priority, SubTask } from '@/src/types/index'
+import { Task, List, Label, User, TaskStatus, Priority, SubTask, RecurringTask, Notification } from '@/src/types/index'
 import { TaskContextType } from '@/src/types/index'
 
 // Create a QueryClient instance
@@ -809,39 +809,31 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
 
   // Queries
-  const { data: tasksData, isLoading: tasksLoading, error: tasksError } = useQuery(
-    ['tasks', state.filters],
-    () => api.getTasks(state.filters),
-    {
-      select: (data: any) => data.tasks || [],
-      enabled: !!state.selectedList || !!state.selectedStatus || !!state.selectedLabel,
-    }
-  )
+  const { data: tasksData, isLoading: tasksLoading, error: tasksError } = useQuery({
+    queryKey: ['tasks', state.filters],
+    queryFn: () => api.getTasks(state.filters),
+    select: (data: any) => data.tasks || [],
+    enabled: !!state.selectedList || !!state.selectedStatus || !!state.selectedLabel,
+  })
 
-  const { data: listsData } = useQuery(
-    ['lists'],
-    () => api.getLists(),
-    {
-      select: (data: any) => data.lists || [],
-    }
-  )
+  const { data: listsData } = useQuery({
+    queryKey: ['lists'],
+    queryFn: () => api.getLists(),
+    select: (data: any) => data.lists || [],
+  })
 
-  const { data: labelsData } = useQuery(
-    ['labels'],
-    () => api.getLabels(),
-    {
-      select: (data: any) => data.labels || [],
-    }
-  )
+  const { data: labelsData } = useQuery({
+    queryKey: ['labels'],
+    queryFn: () => api.getLabels(),
+    select: (data: any) => data.labels || [],
+  })
 
-  const { data: notificationsData } = useQuery(
-    ['notifications'],
-    () => api.getNotifications(),
-    {
-      select: (data: any) => data.notifications || [],
-      refetchInterval: 30000, // Refetch every 30 seconds
-    }
-  )
+  const { data: notificationsData } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => api.getNotifications(),
+    select: (data: any) => data.notifications || [],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  })
 
   // Mutations
   const createTaskMutation = useMutation({
@@ -867,8 +859,8 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   })
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (id: string) => api.deleteTask(id),
-    onSuccess: () => {
+    mutationFn: (id: string) => api.deleteTask(id).then(() => id),
+    onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       dispatch({ type: 'DELETE_TASK', payload: id })
     },
@@ -957,7 +949,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   })
 
   const updateRecurringTaskMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<RecurringTask> }) => api.updateRecurringTask(id, updates),
+    mutationFn: ({ id, updates }: { id: string; updates: { title?: string; description?: string; schedule?: string; isActive?: boolean } }) => api.updateRecurringTask(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurringTasks'] })
     },
@@ -967,9 +959,29 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   })
 
   const deleteRecurringTaskMutation = useMutation({
-    mutationFn: (id: string) => api.deleteRecurringTask(id),
+    mutationFn: (id: string) => api.deleteRecurringTask(id).then(() => id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['recurringTasks'] })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
+
+  const createNotificationMutation = useMutation({
+    mutationFn: (notificationData: Omit<Notification, 'id' | 'createdAt' | 'userId'>) => api.createNotification(notificationData),
+    onSuccess: (data) => {
+      dispatch({ type: 'ADD_NOTIFICATION', payload: data.notification })
+    },
+    onError: (error) => {
+      dispatch({ type: 'SET_ERROR', payload: error.message })
+    },
+  })
+
+  const markNotificationAsReadMutation = useMutation({
+    mutationFn: (id: string) => api.markNotificationAsRead(id).then(() => id),
+    onSuccess: (id) => {
+      dispatch({ type: 'MARK_NOTIFICATION_READ', payload: { id } })
     },
     onError: (error) => {
       dispatch({ type: 'SET_ERROR', payload: error.message })
@@ -1084,6 +1096,51 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     }
   }, [notificationsData])
 
+  const createTaskAsync = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    createTaskMutation.mutate(taskData)
+  }
+
+  const updateTaskAsync = async (id: string, updates: Partial<Task>) => {
+    updateTaskMutation.mutate({ id, updates })
+  }
+
+  const deleteTaskAsync = async (id: string) => {
+    deleteTaskMutation.mutate(id)
+  }
+
+  const createListAsync = async (listData: Omit<List, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    createListMutation.mutate(listData)
+  }
+
+  const createLabelAsync = async (labelData: Omit<Label, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    createLabelMutation.mutate(labelData)
+  }
+
+  const createNotificationAsync = async (notificationData: Omit<Notification, 'id' | 'createdAt' | 'userId'>) => {
+    createNotificationMutation.mutate(notificationData)
+  }
+
+  const markNotificationAsReadAsync = async (id: string) => {
+    markNotificationAsReadMutation.mutate(id)
+  }
+
+  const getRecurringTasksAsync = async () => {
+    const result = await getRecurringTasksQuery.refetch()
+    return result.data || []
+  }
+
+  const createRecurringTaskAsync = async (recurringTaskData: { title: string; description?: string; schedule: string; taskId: string }) => {
+    createRecurringTaskMutation.mutate(recurringTaskData)
+  }
+
+  const updateRecurringTaskAsync = async (id: string, updates: { title?: string; description?: string; schedule?: string; isActive?: boolean }) => {
+    updateRecurringTaskMutation.mutate({ id, updates })
+  }
+
+  const deleteRecurringTaskAsync = async (id: string) => {
+    deleteRecurringTaskMutation.mutate(id)
+  }
+
   const contextValue: TaskContextType = {
     tasks: state.tasks,
     lists: state.lists,
@@ -1091,18 +1148,27 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     notifications: state.notifications,
     loading: state.loading || tasksLoading,
     error: state.error || tasksError?.message || null,
+    selectedList: state.selectedList,
+    selectedStatus: state.selectedStatus,
+    selectedPriority: state.selectedPriority,
+    selectedLabel: state.selectedLabel,
+    viewType: state.viewType,
+    filters: state.filters,
     fetchTasks,
-    createTask,
-    updateTask,
-    deleteTask,
-    createList,
+    setFilters: (filters: Partial<TaskContextType['filters']>) => {
+      dispatch({ type: 'SET_FILTERS', payload: filters })
+    },
+    createTask: createTaskAsync,
+    updateTask: updateTaskAsync,
+    deleteTask: deleteTaskAsync,
+    createList: createListAsync,
     updateList,
     deleteList,
-    createLabel,
+    createLabel: createLabelAsync,
     updateLabel,
     deleteLabel,
-    createNotification,
-    markNotificationAsRead,
+    createNotification: createNotificationAsync,
+    markNotificationAsRead: markNotificationAsReadAsync,
     getSubTasks,
     createSubTask,
     updateSubTask,
@@ -1112,10 +1178,18 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     deleteDependency,
     getMentions,
     markMentionsAsRead,
-    getRecurringTasks,
-    createRecurringTask,
-    updateRecurringTask,
-    deleteRecurringTask,
+    getAnalytics: async (userId: string, params?: any) => {
+      const result = await api.getAnalytics(userId, params)
+      return result
+    },
+    getUserStats: async (userId: string) => {
+      const result = await api.getUserStats(userId)
+      return result
+    },
+    getRecurringTasks: getRecurringTasksAsync,
+    createRecurringTask: createRecurringTaskAsync,
+    updateRecurringTask: updateRecurringTaskAsync,
+    deleteRecurringTask: deleteRecurringTaskAsync,
   }
 
   return (
