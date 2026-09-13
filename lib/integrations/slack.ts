@@ -1,6 +1,6 @@
 "use client"
 
-import { BaseIntegration, Integration, IntegrationConfig } from './base'
+import { BaseIntegration, Integration, IntegrationConfig, integrationConfigs } from './base'
 
 export class SlackIntegration extends BaseIntegration {
   private accessToken: string | null = null
