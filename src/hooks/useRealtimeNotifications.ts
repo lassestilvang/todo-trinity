@@ -38,10 +38,7 @@ export function useRealtimeNotifications(workspaceId?: string) {
 
       // Show toast for new events
       newNotifications.forEach(notification => {
-        addToast(notification.title, 'info', () => {
-          // Handle click - could navigate to task
-          console.log('Navigate to task:', notification.data.taskId)
-        })
+        addToast(notification.title, 'info')
       })
     }
   }, [events, addToast])
