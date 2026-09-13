@@ -226,7 +226,7 @@ export function useSubTasks(taskId: string) {
   const queryClient = useQueryClient()
   const { success, error } = useToast()
 
-  const { data, isPending, error, refetch } = useQuery({
+  const { data, isPending, error: queryError, refetch } = useQuery({
     queryKey: ['subtasks', taskId],
     queryFn: () => api.getSubTasks(taskId),
     enabled: !!taskId,
@@ -284,7 +284,7 @@ export function useTaskDependencies(taskId: string) {
   const queryClient = useQueryClient()
   const { success, error } = useToast()
 
-  const { data, isPending, error, refetch } = useQuery({
+  const { data, isPending, error: queryError, refetch } = useQuery({
     queryKey: ['dependencies', taskId],
     queryFn: () => api.getTaskDependencies(taskId),
     enabled: !!taskId,
@@ -391,7 +391,7 @@ export function useSettings() {
 
 export function useMentions() {
   const queryClient = useQueryClient()
-  const [mentions, setMentions] = useState([])
+  const [mentions, setMentions] = useState<any[]>([])
 
   const fetchMentions = useCallback(async () => {
     try {
