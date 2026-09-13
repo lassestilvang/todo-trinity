@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions)
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     }
 
     const userId = session.user.id
-    const { id: taskId } = params
+    const { id: taskId } = await context.params
 
     // Verify task belongs to user
     const task = await prisma.task.findFirst({
