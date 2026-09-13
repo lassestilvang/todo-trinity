@@ -45,6 +45,11 @@ export const api = {
     return handleResponse(response)
   },
 
+  getTask: async (id: string): Promise<{ task: any }> => {
+    const response = await fetch(`/api/tasks/${id}`)
+    return handleResponse(response)
+  },
+
   createTask: async (taskData: {
     title: string
     description?: string
