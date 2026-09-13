@@ -2,6 +2,7 @@
 
 import { useTaskContext } from '@/src/contexts'
 import { useNotifications } from '@/src/hooks/useLists'
+import { Notification } from '@/src/types/index'
 
 export default function NotificationsPanel({ onClose }: { onClose: () => void }) {
   const { notifications, loading, error } = useNotifications()
@@ -17,12 +18,11 @@ export default function NotificationsPanel({ onClose }: { onClose: () => void })
   }
 
   if (error) {
-    const errorMessage = typeof error === 'string' ? error : error.message
     return (
       <div className="fixed inset-0 bg-black/60 z-50 flex items-center p-4">
         <div className="bg-white rounded-xl p-6 max-w-md">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Error Loading Notifications</h2>
-          <p className="text-gray-600 mb-4">{errorMessage}</p>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button onClick={onClose} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
             Close
           </button>
@@ -47,7 +47,7 @@ export default function NotificationsPanel({ onClose }: { onClose: () => void })
               <button
                 onClick={() => {
                   // Mark all as read
-                  notifications.forEach(n => {
+                  notifications.forEach((n: Notification) => {
                     // Would call mark as read API
                   })
                 }}
@@ -66,7 +66,7 @@ export default function NotificationsPanel({ onClose }: { onClose: () => void })
             </p>
           ) : (
             <div className="space-y-2">
-              {notifications.map((notification: any, index: number) => (
+              {notifications.map((notification: Notification, index: number) => (
                 <div
                   key={notification.id || index}
                   className={`
@@ -112,7 +112,7 @@ export default function NotificationsPanel({ onClose }: { onClose: () => void })
               Mark All as Read
             </button>
             <span className="text-xs text-gray-500">
-              {notifications.filter(n => !n.read).length} unread
+              {notifications.filter((n: Notification) => !n.read).length} unread
             </span>
           </div>
         </div>
