@@ -234,7 +234,7 @@ export class GitHubIntegration extends BaseIntegration {
     assignees?: string[]
     dueDate?: string
   }): Promise<GitHubIssue> {
-    const [owner, repo] = repositoryId.split('/')
+    const [owner, repo] = issueData.repositoryId.split('/')
 
     const issue = await this.makeRequest(`https://api.github.com/repos/${owner}/${repo}/issues`, {
       method: 'POST',
