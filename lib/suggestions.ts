@@ -353,7 +353,7 @@ export class EnhancedNLPParser {
     if (result.task.dueDate) confidence += 15
     if (result.task.priority !== Priority.NORMAL) confidence += 10
     if (result.suggestions.length > 0) confidence += 10
-    if (result.description) confidence += 10
+    if (result.task.description) confidence += 10
 
     // Reduce confidence for vague titles
     if (result.task.title.length < 5) confidence -= 20
