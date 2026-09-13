@@ -59,6 +59,7 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
         description: decomposedTask.description,
         status: TaskStatus.TODO,
         priority: Priority.NORMAL,
+        labels: [],
       })
 
       // Create subtasks
@@ -68,6 +69,7 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
           description: subtask.description,
           status: TaskStatus.TODO,
           priority: subtask.priority,
+          labels: [],
         })
       }
 
@@ -276,45 +278,45 @@ async function simulateAIDecomposition(input: string): Promise<DecompositionResu
   // Generate subtasks based on keywords
   if (keywords.includes('plan') || keywords.includes('organize')) {
     subtasks = [
-      { title: 'Define objectives and scope', estimatedMinutes: 30, priority: 'HIGH' },
-      { title: 'Create timeline and milestones', estimatedMinutes: 45, priority: 'HIGH' },
-      { title: 'Identify resources and budget', estimatedMinutes: 30, priority: 'NORMAL' },
-      { title: 'Assign responsibilities', estimatedMinutes: 20, priority: 'NORMAL' },
-      { title: 'Set up tracking and communication', estimatedMinutes: 15, priority: 'LOW' },
+      { title: 'Define objectives and scope', estimatedMinutes: 30, priority: Priority.HIGH },
+      { title: 'Create timeline and milestones', estimatedMinutes: 45, priority: Priority.HIGH },
+      { title: 'Identify resources and budget', estimatedMinutes: 30, priority: Priority.NORMAL },
+      { title: 'Assign responsibilities', estimatedMinutes: 20, priority: Priority.NORMAL },
+      { title: 'Set up tracking and communication', estimatedMinutes: 15, priority: Priority.LOW },
     ]
   } else if (keywords.includes('write') || keywords.includes('draft') || keywords.includes('blog') || keywords.includes('article')) {
     subtasks = [
-      { title: 'Research and outline', estimatedMinutes: 45, priority: 'HIGH' },
-      { title: 'Write first draft', estimatedMinutes: 90, priority: 'HIGH' },
-      { title: 'Review and edit', estimatedMinutes: 30, priority: 'NORMAL' },
-      { title: 'Add formatting and images', estimatedMinutes: 20, priority: 'LOW' },
-      { title: 'Final proofread and publish', estimatedMinutes: 15, priority: 'NORMAL' },
+      { title: 'Research and outline', estimatedMinutes: 45, priority: Priority.HIGH },
+      { title: 'Write first draft', estimatedMinutes: 90, priority: Priority.HIGH },
+      { title: 'Review and edit', estimatedMinutes: 30, priority: Priority.NORMAL },
+      { title: 'Add formatting and images', estimatedMinutes: 20, priority: Priority.LOW },
+      { title: 'Final proofread and publish', estimatedMinutes: 15, priority: Priority.NORMAL },
     ]
   } else if (keywords.includes('meeting') || keywords.includes('presentation') || keywords.includes('report')) {
     subtasks = [
-      { title: 'Gather data and materials', estimatedMinutes: 60, priority: 'HIGH' },
-      { title: 'Create outline/agenda', estimatedMinutes: 30, priority: 'HIGH' },
-      { title: 'Build slides/document', estimatedMinutes: 90, priority: 'HIGH' },
-      { title: 'Review with stakeholders', estimatedMinutes: 45, priority: 'NORMAL' },
-      { title: 'Finalize and distribute', estimatedMinutes: 15, priority: 'NORMAL' },
+      { title: 'Gather data and materials', estimatedMinutes: 60, priority: Priority.HIGH },
+      { title: 'Create outline/agenda', estimatedMinutes: 30, priority: Priority.HIGH },
+      { title: 'Build slides/document', estimatedMinutes: 90, priority: Priority.HIGH },
+      { title: 'Review with stakeholders', estimatedMinutes: 45, priority: Priority.NORMAL },
+      { title: 'Finalize and distribute', estimatedMinutes: 15, priority: Priority.NORMAL },
     ]
   } else if (keywords.includes('code') || keywords.includes('develop') || keywords.includes('build') || keywords.includes('implement')) {
     subtasks = [
-      { title: 'Requirements analysis', estimatedMinutes: 45, priority: 'HIGH' },
-      { title: 'Design architecture', estimatedMinutes: 60, priority: 'HIGH' },
-      { title: 'Implement core functionality', estimatedMinutes: 180, priority: 'HIGH' },
-      { title: 'Write tests', estimatedMinutes: 60, priority: 'NORMAL' },
-      { title: 'Code review and refactor', estimatedMinutes: 45, priority: 'NORMAL' },
-      { title: 'Deploy and verify', estimatedMinutes: 30, priority: 'NORMAL' },
+      { title: 'Requirements analysis', estimatedMinutes: 45, priority: Priority.HIGH },
+      { title: 'Design architecture', estimatedMinutes: 60, priority: Priority.HIGH },
+      { title: 'Implement core functionality', estimatedMinutes: 180, priority: Priority.HIGH },
+      { title: 'Write tests', estimatedMinutes: 60, priority: Priority.NORMAL },
+      { title: 'Code review and refactor', estimatedMinutes: 45, priority: Priority.NORMAL },
+      { title: 'Deploy and verify', estimatedMinutes: 30, priority: Priority.NORMAL },
     ]
   } else {
     // Generic decomposition
     subtasks = [
-      { title: 'Break down requirements', estimatedMinutes: 30, priority: 'HIGH' },
-      { title: 'Create action plan', estimatedMinutes: 45, priority: 'HIGH' },
-      { title: 'Execute main work', estimatedMinutes: 90, priority: 'HIGH' },
-      { title: 'Review and validate', estimatedMinutes: 30, priority: 'NORMAL' },
-      { title: 'Finalize and document', estimatedMinutes: 20, priority: 'LOW' },
+      { title: 'Break down requirements', estimatedMinutes: 30, priority: Priority.HIGH },
+      { title: 'Create action plan', estimatedMinutes: 45, priority: Priority.HIGH },
+      { title: 'Execute main work', estimatedMinutes: 90, priority: Priority.HIGH },
+      { title: 'Review and validate', estimatedMinutes: 30, priority: Priority.NORMAL },
+      { title: 'Finalize and document', estimatedMinutes: 20, priority: Priority.LOW },
     ]
   }
 
