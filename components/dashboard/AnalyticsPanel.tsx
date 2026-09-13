@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { TaskStatus, Priority } from '@/src/types/index'
 import { useTaskContext } from '@/src/contexts'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts'
 import { TrendingUp, Calendar, Users, Target, Clock, Star, Activity, Award, Zap } from 'lucide-react'
@@ -34,16 +35,16 @@ export default function AnalyticsPanel() {
   }, [timeframe])
 
   const calculateStats = () => {
-    const completed = tasks.filter(t => t.status === 'completed').length
-    const inProgress = tasks.filter(t => t.status === 'in_progress').length
-    const todo = tasks.filter(t => t.status === 'todo').length
+    const completed = tasks.filter(t => t.status === TaskStatus.COMPLETED).length
+    const inProgress = tasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length
+    const todo = tasks.filter(t => t.status === TaskStatus.TODO).length
     const overdue = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date()).length
 
     const priorityCounts = {
-      urgent: tasks.filter(t => t.priority === 'urgent').length,
-      high: tasks.filter(t => t.priority === 'high').length,
-      normal: tasks.filter(t => t.priority === 'normal').length,
-      low: tasks.filter(t => t.priority === 'low').length,
+      urgent: tasks.filter(t => t.priority === Priority.URGENT).length,
+      high: tasks.filter(t => t.priority === Priority.HIGH).length,
+      normal: tasks.filter(t => t.priority === Priority.NORMAL).length,
+      low: tasks.filter(t => t.priority === Priority.LOW).length,
     }
 
     const listCounts = lists.map(list => ({
@@ -65,7 +66,7 @@ export default function AnalyticsPanel() {
       weeklyData.push({
         day: dayStr,
         tasks: dayTasks.length,
-        completed: dayTasks.filter(t => t.status === 'completed').length
+        completed: dayTasks.filter(t => t.status === TaskStatus.COMPLETED).length
       })
     }
 
