@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { List } from '@/src/types/index'
 import { api } from '@/lib/api-client'
-import { toast } from '@/src/hooks/useToast'
+import { useToast } from '@/src/hooks/useToast'
 
 export function useLists() {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['lists'],
     queryFn: () => api.getLists(),
     select: (data: any) => data.lists || [],
@@ -17,10 +18,10 @@ export function useLists() {
     mutationFn: (listData: any) => api.createList(listData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lists'] })
-      toast.success('List created successfully')
+      success('List created successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create list')
+    onError: (err: any) => {
+      error(err.message || 'Failed to create list')
     },
   })
 
@@ -28,10 +29,10 @@ export function useLists() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<List> }) => api.updateList(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lists'] })
-      toast.success('List updated successfully')
+      success('List updated successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update list')
+    onError: (err: any) => {
+      error(err.message || 'Failed to update list')
     },
   })
 
@@ -39,17 +40,17 @@ export function useLists() {
     mutationFn: (id: string) => api.deleteList(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lists'] })
-      toast.success('List deleted successfully')
+      success('List deleted successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete list')
+    onError: (err: any) => {
+      error(err.message || 'Failed to delete list')
     },
   })
 
   return {
     lists: data || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     createList: createList.mutate,
     updateList: updateList.mutate,
     deleteList: deleteList.mutate,
@@ -61,8 +62,9 @@ export function useLists() {
 
 export function useLabels() {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['labels'],
     queryFn: () => api.getLabels(),
     select: (data: any) => data.labels || [],
@@ -73,10 +75,10 @@ export function useLabels() {
     mutationFn: (labelData: any) => api.createLabel(labelData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['labels'] })
-      toast.success('Label created successfully')
+      success('Label created successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create label')
+    onError: (err: any) => {
+      error(err.message || 'Failed to create label')
     },
   })
 
@@ -84,10 +86,10 @@ export function useLabels() {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<List> }) => api.updateLabel(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['labels'] })
-      toast.success('Label updated successfully')
+      success('Label updated successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update label')
+    onError: (err: any) => {
+      error(err.message || 'Failed to update label')
     },
   })
 
@@ -95,17 +97,17 @@ export function useLabels() {
     mutationFn: (id: string) => api.deleteLabel(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['labels'] })
-      toast.success('Label deleted successfully')
+      success('Label deleted successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete label')
+    onError: (err: any) => {
+      error(err.message || 'Failed to delete label')
     },
   })
 
   return {
     labels: data || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     createLabel: createLabel.mutate,
     updateLabel: updateLabel.mutate,
     deleteLabel: deleteLabel.mutate,
@@ -117,8 +119,9 @@ export function useLabels() {
 
 export function useNotifications() {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => api.getNotifications(),
     select: (data: any) => data.notifications || [],
@@ -131,8 +134,8 @@ export function useNotifications() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create notification')
+    onError: (err: any) => {
+      error(err.message || 'Failed to create notification')
     },
   })
 
@@ -141,15 +144,15 @@ export function useNotifications() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to mark notification as read')
+    onError: (err: any) => {
+      error(err.message || 'Failed to mark notification as read')
     },
   })
 
   return {
     notifications: data || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     createNotification: createNotification.mutate,
     markNotificationAsRead: markNotificationAsRead.mutate,
     isCreating: createNotification.isPending,
@@ -159,8 +162,9 @@ export function useNotifications() {
 
 export function useAuth() {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
-  const { data: authData, isPending, error } = useQuery({
+  const { data: authData, isPending, error: queryError } = useQuery({
     queryKey: ['auth'],
     queryFn: () => api.getAuth(),
     staleTime: 1000 * 60 * 5,
@@ -171,8 +175,8 @@ export function useAuth() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Login failed')
+    onError: (err: any) => {
+      error(err.message || 'Login failed')
     },
   })
 
@@ -181,8 +185,8 @@ export function useAuth() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['auth'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Signup failed')
+    onError: (err: any) => {
+      error(err.message || 'Signup failed')
     },
   })
 
@@ -192,15 +196,15 @@ export function useAuth() {
       queryClient.invalidateQueries({ queryKey: ['auth'] })
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Logout failed')
+    onError: (err: any) => {
+      error(err.message || 'Logout failed')
     },
   })
 
   return {
     user: authData?.user || null,
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     login: login.mutate,
     signup: signup.mutate,
     logout: logout.mutate,
