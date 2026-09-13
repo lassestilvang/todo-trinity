@@ -45,7 +45,7 @@ export class SlackIntegration extends BaseIntegration {
         }
       }
     } catch (error) {
-      throw new Error(`Slack authentication failed: ${error.message}`)
+      throw new Error(`Slack authentication failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -94,7 +94,7 @@ export class SlackIntegration extends BaseIntegration {
         connected: false,
         lastSync: new Date().toISOString(),
         syncStatus: 'error',
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       }
     }
   }
