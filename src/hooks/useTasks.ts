@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Task, TaskStatus, Priority, SubTask } from '@/src/types/index'
 import { api } from '@/lib/api-client'
-import { toast } from '@/src/hooks/useToast'
+import { useToast } from '@/src/hooks/useToast'
 import { useState, useCallback, useEffect } from 'react'
 
 export function useTasks(filters?: {
@@ -14,8 +14,9 @@ export function useTasks(filters?: {
   limit?: number
 }) {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
-  const { data, isPending, error, refetch } = useQuery({
+  const { data, isPending, error: queryError, refetch } = useQuery({
     queryKey: ['tasks', filters ?? {}],
     queryFn: () => api.getTasks(filters),
     select: (data: any) => data.tasks || [],
@@ -26,10 +27,10 @@ export function useTasks(filters?: {
     mutationFn: (taskData: any) => api.createTask(taskData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      toast.success('Task created successfully')
+      success('Task created successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create task')
+    onError: (err: any) => {
+      error(err.message || 'Failed to create task')
     },
   })
 
@@ -37,10 +38,10 @@ export function useTasks(filters?: {
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Task> }) => api.updateTask(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      toast.success('Task updated successfully')
+      success('Task updated successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update task')
+    onError: (err: any) => {
+      error(err.message || 'Failed to update task')
     },
   })
 
@@ -48,17 +49,17 @@ export function useTasks(filters?: {
     mutationFn: (id: string) => api.deleteTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      toast.success('Task deleted successfully')
+      success('Task deleted successfully')
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete task')
+    onError: (err: any) => {
+      error(err.message || 'Failed to delete task')
     },
   })
 
   return {
     tasks: data || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     createTask: createTask.mutate,
     updateTask: updateTask.mutate,
     deleteTask: deleteTask.mutate,
@@ -70,7 +71,7 @@ export function useTasks(filters?: {
 }
 
 export function useTask(id: string) {
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['task', id],
     queryFn: () => api.getTask(id),
     enabled: !!id,
@@ -80,12 +81,12 @@ export function useTask(id: string) {
   return {
     task: data?.task || null,
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
   }
 }
 
 export function useTaskStats(userId: string) {
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['userStats', userId],
     queryFn: () => api.getUserStats(userId),
     enabled: !!userId,
@@ -95,12 +96,12 @@ export function useTaskStats(userId: string) {
   return {
     stats: data || null,
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
   }
 }
 
 export function useGamification(userId: string) {
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['gamification', userId],
     queryFn: () => api.getGamification(userId),
     enabled: !!userId,
@@ -110,12 +111,12 @@ export function useGamification(userId: string) {
   return {
     gamification: data || null,
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
   }
 }
 
 export function useSuggestions(userId: string) {
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['suggestions', userId],
     queryFn: () => api.getSuggestions(userId),
     enabled: !!userId,
@@ -125,7 +126,7 @@ export function useSuggestions(userId: string) {
   return {
     suggestions: data?.suggestions || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
   }
 }
 
@@ -144,7 +145,7 @@ export function useParseNaturalLanguage() {
 }
 
 export function useSearch(query: string) {
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['search', query],
     queryFn: () => api.getSearch(query),
     enabled: query.length > 0,
@@ -160,14 +161,15 @@ export function useSearch(query: string) {
   return {
     results: data?.results || { tasks: [], lists: listsData?.lists || [], labels: [] },
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
   }
 }
 
 export function useSavedSearches() {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['savedSearches'],
     queryFn: () => api.getSavedSearches(),
     staleTime: 1000 * 60 * 5,
@@ -179,8 +181,8 @@ export function useSavedSearches() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savedSearches'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to save search')
+    onError: (err: any) => {
+      error(err.message || 'Failed to save search')
     },
   })
 
@@ -189,15 +191,15 @@ export function useSavedSearches() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['savedSearches'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete saved search')
+    onError: (err: any) => {
+      error(err.message || 'Failed to delete saved search')
     },
   })
 
   return {
     searches: data?.searches || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     saveSearch: saveSearch.mutate,
     deleteSearch: deleteSearch.mutate,
     isSaving: saveSearch.isPending,
@@ -206,7 +208,7 @@ export function useSavedSearches() {
 }
 
 export function useViews(viewType: string) {
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['views', viewType],
     queryFn: () => api.getViews(viewType),
     enabled: !!viewType,
@@ -216,12 +218,13 @@ export function useViews(viewType: string) {
   return {
     views: data || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
   }
 }
 
 export function useSubTasks(taskId: string) {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['subtasks', taskId],
@@ -236,8 +239,8 @@ export function useSubTasks(taskId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create subtask')
+    onError: (err: any) => {
+      error(err.message || 'Failed to create subtask')
     },
   })
 
@@ -247,8 +250,8 @@ export function useSubTasks(taskId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update subtask')
+    onError: (err: any) => {
+      error(err.message || 'Failed to update subtask')
     },
   })
 
@@ -258,15 +261,15 @@ export function useSubTasks(taskId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', taskId] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete subtask')
+    onError: (err: any) => {
+      error(err.message || 'Failed to delete subtask')
     },
   })
 
   return {
     subtasks: data?.subtasks || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     createSubTask: createSubTask.mutate,
     updateSubTask: updateSubTask.mutate,
     deleteSubTask: deleteSubTask.mutate,
@@ -279,6 +282,7 @@ export function useSubTasks(taskId: string) {
 
 export function useTaskDependencies(taskId: string) {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ['dependencies', taskId],
@@ -293,8 +297,8 @@ export function useTaskDependencies(taskId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dependencies', taskId] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create dependency')
+    onError: (err: any) => {
+      error(err.message || 'Failed to create dependency')
     },
   })
 
@@ -304,15 +308,15 @@ export function useTaskDependencies(taskId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dependencies', taskId] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete dependency')
+    onError: (err: any) => {
+      error(err.message || 'Failed to delete dependency')
     },
   })
 
   return {
     dependencies: data?.dependencies || [],
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     createDependency: createDependency.mutate,
     deleteDependency: deleteDependency.mutate,
     isCreating: createDependency.isPending,
@@ -323,8 +327,9 @@ export function useTaskDependencies(taskId: string) {
 
 export function useSettings() {
   const queryClient = useQueryClient()
+  const { success, error } = useToast()
 
-  const { data, isPending, error } = useQuery({
+  const { data, isPending, error: queryError } = useQuery({
     queryKey: ['settings'],
     queryFn: () => api.getSettings(),
     staleTime: 1000 * 60 * 5,
@@ -335,8 +340,8 @@ export function useSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] })
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update settings')
+    onError: (err: any) => {
+      error(err.message || 'Failed to update settings')
     },
   })
 
@@ -378,7 +383,7 @@ export function useSettings() {
   return {
     settings,
     loading: isPending,
-    error: error?.message || null,
+    error: queryError?.message || null,
     updateSettings: updateSettingsMutation.mutate,
     isUpdating: updateSettingsMutation.isPending,
   }
