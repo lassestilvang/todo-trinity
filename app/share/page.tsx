@@ -66,7 +66,7 @@ export default function SharePage() {
         await navigator.share({
           title: formData.title || 'Task from share',
           text: formData.text,
-          url: window.location.href
+          url: typeof window !== 'undefined' ? window.location.href : formData.url || ''
         })
 
         // After successful share, create the task
