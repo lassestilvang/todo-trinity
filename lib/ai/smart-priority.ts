@@ -9,18 +9,18 @@ export class SmartPriorityEngine {
     const tasks = await prisma.task.findMany({
       where: { userId },
       include: { labels: true }
-    })
+    }) as unknown as Task[]
 
     const completed = await prisma.task.findMany({
       where: { userId, status: 'COMPLETED' },
       select: { id: true, completedAt: true, priority: true, dueDate: true }
-    })
+    }) as { id: string; completedAt: Date | null; priority: Priority; dueDate: Date | null }[]
 
     const workload = this.analyzeWorkload(tasks)
     const patterns = this.analyzeProductivityPatterns(completed)
     this.productivityPatterns = patterns
 
-    const recommendations = tasks.map(task => this.generateRecommendation(task, workload, patterns))
+    const recommendations = tasks.map((task: Task) => this.generateRecommendation(task, workload, patterns))
 
     return {
       recommendations,
@@ -31,26 +31,30 @@ export class SmartPriorityEngine {
 
   private analyzeWorkload(tasks: Task[]): WorkloadInfo {
     const totalTasks = tasks.length
-    const activeTasks = tasks.filter(t => t.status !== 'COMPLETED').length
+    const activeTasks = tasks.filter(t => t.status !== TaskStatus.COMPLETED).length
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const completedToday = tasks.filter(t => {
       if (!t.completedAt) return false
-      return new Date(t.completedAt).setHours(0, 0, 0, 0) >= today.setHours(0, 0, 0, 0)
+      const completedDate = new Date(t.completedAt)
+      completedDate.setHours(0, 0, 0, 0)
+      return completedDate >= today
     }).length
 
     const overdueTasks = tasks.filter(t => {
-      if (t.status === 'COMPLETED' || t.dueDate === null) return false
+      if (t.status === TaskStatus.COMPLETED) return false
+      if (!t.dueDate) return false
       return new Date(t.dueDate) < new Date()
     }).length
 
     return { totalTasks, activeTasks, completedToday, overdueTasks }
   }
 
-  private analyzeProductivityPatterns(completed: { id: string; completedAt: string; priority: Priority; dueDate: string | null }[]): ProductivityPattern[] {
+  private analyzeProductivityPatterns(completed: { id: string; completedAt: Date | null; priority: Priority; dueDate: Date | null }[]): ProductivityPattern[] {
     const patterns: Map<string, ProductivityPattern> = new Map()
 
     for (const completion of completed) {
+      if (!completion.completedAt) continue
       const completedAt = new Date(completion.completedAt)
       const hour = completedAt.getHours()
       const dayOfWeek = completedAt.getDay()
@@ -67,7 +71,7 @@ export class SmartPriorityEngine {
           dayOfWeek,
           avgCompletionRate: 1,
           taskCount: 1,
-          avgDuration: this.estimateDuration(completion as any)
+          avgDuration: this.estimateDuration(completion)
         })
       }
     }
@@ -75,7 +79,7 @@ export class SmartPriorityEngine {
     return Array.from(patterns.values())
   }
 
-  private estimateDuration(completion: any): number {
+  private estimateDuration(completion: { priority: Priority }): number {
     // Simple estimate based on priority
     const defaultDurations = {
       [Priority.URGENT]: 120,
@@ -106,20 +110,18 @@ export class SmartPriorityEngine {
         suggestedPriority = Priority.URGENT
         confidence = 90
       } else if (daysUntilDue < 3) {
-        if (suggestedPriority !== Priority.URGENT) {
-          reasons.push('Due within 3 days - consider HIGH')
-          if (suggestedPriority !== Priority.URGENT && suggestedPriority !== Priority.HIGH) {
-            suggestedPriority = Priority.HIGH
-            confidence = 75
-          }
+        // In this branch, daysUntilDue >= 1, so URGENT was already handled above
+        reasons.push('Due within 3 days - consider HIGH')
+        if (suggestedPriority !== Priority.HIGH) {
+          suggestedPriority = Priority.HIGH
+          confidence = 75
         }
       } else if (daysUntilDue < 7) {
-        if (suggestedPriority.length < 2) {
-          reasons.push('Due within a week - consider priority adjustment')
-          if (suggestedPriority === Priority.LOW) {
-            suggestedPriority = Priority.NORMAL
-            confidence = 65
-          }
+        // In this branch, daysUntilDue >= 3 and < 7, so HIGH was already handled
+        reasons.push('Due within a week - consider priority adjustment')
+        if (suggestedPriority === Priority.LOW) {
+          suggestedPriority = Priority.NORMAL
+          confidence = 65
         }
       }
     }
@@ -180,6 +182,7 @@ export class SmartPriorityEngine {
 
     return {
       taskId: task.id,
+      currentPriority: task.priority,
       suggestedPriority,
       confidence: Math.min(100, Math.max(0, confidence)),
       reason: reasons.join('. '),
@@ -203,7 +206,7 @@ export class SmartPriorityEngine {
     return result.recommendations.map(rec => ({
       taskId: rec.taskId,
       title: tasks.find(t => t.id === rec.taskId)?.title || 'Unknown',
-      currentPriority: this.getTaskPriority(rec.taskId),
+      currentPriority: rec.currentPriority,
       suggestedPriority: rec.suggestedPriority,
       confidence: rec.confidence,
       reasoning: rec.reason,
