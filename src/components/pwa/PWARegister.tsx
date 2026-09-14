@@ -70,7 +70,7 @@ export default function PWARegister() {
   }
 
   const setupPushNotifications = async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
       // We'll request permission when the user explicitly asks
       console.log('Push notifications available, waiting for user permission')
     }
@@ -108,7 +108,7 @@ export default function PWARegister() {
   }
 
   const installPWA = async () => {
-    if ('beforeinstallprompt' in window) {
+    if (typeof window !== 'undefined' && 'beforeinstallprompt' in window) {
       // This would be triggered by the beforeinstallprompt event
       addToast('PWA install prompt available', 'info')
     }
@@ -116,10 +116,12 @@ export default function PWARegister() {
 
   const handleInstall = () => {
     // Triggered from beforeinstallprompt event
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault()
-      // Store for later use
-    })
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault()
+        // Store for later use
+      })
+    }
   }
 
   return null // This component doesn't render anything visible
