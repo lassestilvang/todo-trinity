@@ -41,7 +41,7 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
   const { dependencies, createDependency, deleteDependency } = useTaskDependencies(task.id)
 
   const handleSubTaskCreate = () => {
-    if (window.confirm('Add a subtask?')) {
+    if (typeof window !== 'undefined' && window.confirm('Add a subtask?')) {
       createSubTask({ title: 'New subtask', taskId: task.id })
     }
   }
@@ -55,9 +55,11 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
   }
 
   const handleAddDependency = () => {
-    const dependsOnId = window.prompt('Enter the task ID this task depends on:')
-    if (dependsOnId) {
-      createDependency({ taskId: task.id, dependsOnId })
+    if (typeof window !== 'undefined') {
+      const dependsOnId = window.prompt('Enter the task ID this task depends on:')
+      if (dependsOnId) {
+        createDependency({ taskId: task.id, dependsOnId })
+      }
     }
   }
 
@@ -89,7 +91,7 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
   }
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
+    if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this task?')) {
       onDelete(task.id)
     }
   }
