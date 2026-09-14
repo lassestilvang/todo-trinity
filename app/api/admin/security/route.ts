@@ -85,20 +85,21 @@ export async function PUT(request: NextRequest) {
     } = body
 
     const settingsToUpdate = [
-      { key: 'twoFactorEnabled', value: String(twoFactorEnabled) },
-      { key: 'passwordPolicyEnabled', value: String(passwordPolicyEnabled) },
-      { key: 'sessionTimeout', value: String(sessionTimeout) },
-      { key: 'maxLoginAttempts', value: String(maxLoginAttempts) },
-      { key: 'lockoutDuration', value: String(lockoutDuration) },
+      { category: 'security', key: 'twoFactorEnabled', value: String(twoFactorEnabled) },
+      { category: 'security', key: 'passwordPolicyEnabled', value: String(passwordPolicyEnabled) },
+      { category: 'security', key: 'sessionTimeout', value: String(sessionTimeout) },
+      { category: 'security', key: 'maxLoginAttempts', value: String(maxLoginAttempts) },
+      { category: 'security', key: 'lockoutDuration', value: String(lockoutDuration) },
     ]
 
     // Update or create each setting
-    const updatePromises = settingsToUpdate.map(({ key, value }) =>
-      prisma.adminSetting.upsert({
-        where: { category_key: { category: 'security', key } },
-        update: { value },
-        create: { category: 'security', key, value },
-      })
+    const updatePromises = settingsToUpdate.map(
+      ({ category, key, value }) =>
+        prisma.adminSetting.upsert({
+          where: { category, key },
+          update: { value },
+          create: { category, key, value: value as any },
+        })
     )
 
     await Promise.all(updatePromises)
