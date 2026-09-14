@@ -1,3 +1,14 @@
+import { Task, Priority } from '@/src/types/index'
+
+export interface CompletedTask {
+  id: string
+  title: string
+  completedAt: string
+  priority: Priority
+  dueDate?: string | null
+  description?: string | null
+}
+
 export interface PriorityInsight {
   taskId: string
   title: string
