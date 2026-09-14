@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { TaskStatus, Priority } from '@/src/types/index'
 import { useTaskContext } from '@/src/contexts'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts'
-import { TrendingUp, Calendar, Users, Target, Clock, Star, Activity, Award, Zap } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts'
+import { TrendingUp, Calendar, Users, Target, Clock, Star, Activity, Award, Zap, PieChart as PieChartIcon, RefreshCw, Filter, LayoutList, LayoutDashboard } from 'lucide-react'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
 
@@ -66,8 +66,45 @@ export default function AnalyticsPanel({ onClose }: { onClose?: () => void }) {
       weeklyData.push({
         day: dayStr,
         tasks: dayTasks.length,
-        completed: dayTasks.filter(t => t.status === TaskStatus.COMPLETED).length
+        completed: dayTasks.filter(t => t.status === TaskStatus.COMPLETED).length,
+        started: dayTasks.filter(t => t.status === TaskStatus.IN_PROGRESS).length
       })
+    }
+
+    // Calculate velocity (tasks completed per week over last 4 weeks)
+    const completedThisWeek = tasks.filter(t =>
+      t.status === TaskStatus.COMPLETED &&
+      t.completedAt &&
+      new Date(t.completedAt).setHours(0, 0, 0, 0) >= new Date().setHours(0, 0, 0, 0) - 7 * 24 * 60 * 60 * 1000
+    ).length
+
+    const completedLastWeek = tasks.filter(t =>
+      t.status === TaskStatus.COMPLETED &&
+      t.completedAt &&
+      new Date(t.completedAt).getTime() < new Date().setHours(0, 0, 0, 0) - 7 * 24 * 60 * 60 * 1000 &&
+      new Date(t.completedAt).getTime() >= new Date().setHours(0, 0, 0, 0) - 14 * 24 * 60 * 60 * 1000
+    ).length
+
+    const velocity = completedLastWeek > 0
+      ? Math.round((completedThisWeek / completedLastWeek) * 10) / 10  // 1 decimal place
+      : 1.0
+
+    const avgTaskDuration = tasks.length > 0
+      ? Math.round((tasks.reduce((sum, t) => {
+          if (t.createdAt && t.completedAt) {
+            const duration = new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime()
+            return sum + duration / (1000 * 60 * 60) // hours
+          }
+          return sum
+        }, 0) / tasks.length) * 10) / 10
+      : 0
+
+    // Priority trend analysis
+    const priorityTrend = {
+      urgentChange: calculatePriorityTrend(Priority.URGENT),
+      highChange: calculatePriorityTrend(Priority.HIGH),
+      normalChange: calculatePriorityTrend(Priority.NORMAL),
+      lowChange: calculatePriorityTrend(Priority.LOW)
     }
 
     return {
@@ -78,8 +115,34 @@ export default function AnalyticsPanel({ onClose }: { onClose?: () => void }) {
       priorityCounts,
       listCounts,
       weeklyData,
-      productivity: tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0
+      productivity: tasks.length > 0 ? Math.round((completed / tasks.length) * 100) : 0,
+      velocity,
+      avgTaskDuration,
+      priorityTrend
     }
+  }
+
+  function calculatePriorityTrend(priority: Priority): number {
+    const priorityTasks = tasks.filter(t => t.priority === priority)
+    if (priorityTasks.length === 0) return 0
+
+    const now = new Date()
+    const recentCompleted = priorityTasks.filter(t =>
+      t.completedAt &&
+      new Date(t.completedAt) >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) // last 30 days
+    ).length
+
+    const previousPeriodCompleted = priorityTasks.filter(t =>
+      t.completedAt &&
+      new Date(t.completedAt) < new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) &&
+      new Date(t.completedAt) >= new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000) // 30-60 days ago
+    ).length
+
+    if (previousPeriodCompleted === 0) {
+      return recentCompleted > 0 ? 1.0 : 0.0
+    }
+
+    return Math.round((recentCompleted / previousPeriodCompleted) * 100) / 100
   }
 
   const stats = calculateStats()
@@ -210,29 +273,48 @@ export default function AnalyticsPanel({ onClose }: { onClose?: () => void }) {
       {/* Productivity Insights */}
       <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">💡 Productivity Insights</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
-              <Users className="w-5 h-5 text-blue-500" />
-              <h4 className="font-medium text-gray-900">Peak Hours</h4>
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+              <h4 className="font-medium text-gray-900">Velocity</h4>
             </div>
-            <p className="text-sm text-gray-600">Best productivity time: 10 AM - 2 PM</p>
+            <p className="text-sm text-gray-600">
+              {stats.velocity > 1 ? `+${Math.round((stats.velocity - 1) * 100)}%` : stats.velocity === 1 ? 'steady' : `${Math.round((1 - stats.velocity) * 100)}% decline`} vs last week
+            </p>
           </div>
 
           <div className="bg-white rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
-              <Calendar className="w-5 h-5 text-green-500" />
-              <h4 className="font-medium text-gray-900">Task Trends</h4>
+              <Zap className="w-5 h-5 text-yellow-500" />
+              <h4 className="font-medium text-gray-900">Avg Task Duration</h4>
             </div>
-            <p className="text-sm text-gray-600">+15% more tasks completed this week</p>
+            <p className="text-sm text-gray-600">
+              {stats.avgTaskDuration > 0 ? `${stats.avgTaskDuration}h` : 'No data'}
+            </p>
           </div>
 
           <div className="bg-white rounded-lg p-4">
             <div className="flex items-center space-x-2 mb-2">
-              <Award className="w-5 h-5 text-yellow-500" />
-              <h4 className="font-medium text-gray-900">Badges Earned</h4>
+              <Star className="w-5 h-5 text-green-500" />
+              <h4 className="font-medium text-gray-900">Completion Rate</h4>
             </div>
-            <p className="text-sm text-gray-600">5 new badges this week</p>
+            <p className="text-sm text-gray-600">
+              {Math.round(stats.productivity)}% of tasks completed
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <LayoutDashboard className="w-5 h-5 text-purple-500" />
+              <h4 className="font-medium text-gray-900">Priority Balance</h4>
+            </div>
+            <p className="text-sm text-gray-600">
+              {Math.round(stats.priorityCounts.urgent / (tasks.length || 1) * 100)}% urgent /
+              {Math.round(stats.priorityCounts.high / (tasks.length || 1) * 100)}% high /
+              {Math.round(stats.priorityCounts.normal / (tasks.length || 1) * 100)}% normal /
+              {Math.round(stats.priorityCounts.low / (tasks.length || 1) * 100)}% low
+            </p>
           </div>
         </div>
       </div>
