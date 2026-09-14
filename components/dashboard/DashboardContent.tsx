@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { TaskStatus, Priority, Notification } from '@/src/types/index'
+import { Zap } from 'lucide-react'
 import { useTaskContext } from '@/src/contexts'
 import { useUser } from '@/src/contexts'
 import WorkspacePresence from '@/components/workspace/WorkspacePresence'
@@ -26,6 +27,9 @@ import KanbanBoard from '@/components/views/KanbanBoard'
 import RealtimeStatus from '@/components/dashboard/RealtimeStatus'
 import AIPrioritySuggestions from '@/components/dashboard/AIPrioritySuggestions'
 import ConflictDetectionPanel from '@/components/dashboard/ConflictDetectionPanel'
+import CollaborationPanel from '@/components/dashboard/CollaborationPanel'
+import WorkflowBuilder from '@/components/automation/WorkflowBuilder'
+import AutomationPanel from '@/components/automation/AutomationPanel'
 
 export default function DashboardContent() {
   const taskContext = useTaskContext()
@@ -45,6 +49,9 @@ export default function DashboardContent() {
   const [showAITaskDecomposer, setShowAITaskDecomposer] = useState(false)
   const [showAIPrioritySuggestions, setShowAIPrioritySuggestions] = useState(false)
   const [showConflictDetection, setShowConflictDetection] = useState(false)
+  const [showCollaboration, setShowCollaboration] = useState(false)
+  const [showAutomation, setShowAutomation] = useState(false)
+  const [showAutomationPanel, setShowAutomationPanel] = useState(false)
 
   if (taskContext.loading) {
     return (
@@ -163,6 +170,18 @@ export default function DashboardContent() {
                 Schedule Check
               </button>
               <button
+                onClick={() => setShowCollaboration(!showCollaboration)}
+                className={`px-4 py-2 rounded ${showCollaboration ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Collaborate
+              </button>
+              <button
+                onClick={() => setShowAutomationPanel(!showAutomationPanel)}
+                className={`px-4 py-2 rounded ${showAutomationPanel ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Automation
+              </button>
+              <button
                 onClick={() => setShowActivity(!showActivity)}
                 className={`px-4 py-2 rounded ${showActivity ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}`}
               >
@@ -271,6 +290,15 @@ export default function DashboardContent() {
         )}
         {showConflictDetection && (
           <ConflictDetectionPanel />
+        )}
+        {showCollaboration && (
+          <CollaborationPanel workspaceId={currentWorkspace?.id} />
+        )}
+        {showAutomation && (
+          <WorkflowBuilder />
+        )}
+        {showAutomationPanel && (
+          <AutomationPanel onClose={() => setShowAutomationPanel(false)} />
         )}
       </main>
     </div>
