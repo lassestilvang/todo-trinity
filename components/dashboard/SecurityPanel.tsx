@@ -274,12 +274,14 @@ export default function SecurityPanel({ onClose }: { onClose?: () => void }) {
                     {setting.type === 'number' && (
                       <input
                         type="number"
-                        value={setting.value}
-                        min={setting.min}
-                        max={setting.max}
+                        value={typeof setting.value === 'number' ? setting.value : ''}
+                        min={setting.min ?? 0}
+                        max={setting.max ?? 1000}
                         onChange={(e) => {
-                          const val = parseInt(e.target.value) || setting.min
-                          handleNumberChange(setting.key, Math.min(Math.max(val, setting.min), setting.max))
+                          const val = parseInt(e.target.value) || (setting.min ?? 0)
+                          const minVal = setting.min ?? 0
+                          const maxVal = setting.max ?? 1000
+                          handleNumberChange(setting.key, Math.min(Math.max(val, minVal), maxVal))
                         }}
                         disabled={isSaving}
                         className={`w-24 px-2 py-1 border border-gray-300 rounded ${isSaving ? 'bg-gray-100' : ''} focus:outline-none focus:ring-2 focus:ring-blue-500`}
