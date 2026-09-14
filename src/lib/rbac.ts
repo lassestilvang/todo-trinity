@@ -75,5 +75,3 @@ export function can(
   const permissionKey = `${action}:${resource}`
   return hasPermission(userRole, permissionKey)
 }
-
-export type { UserRole, Permission }
