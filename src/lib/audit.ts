@@ -29,19 +29,52 @@ export enum AuditAction {
   BACKUP_RESTORE = 'backup_restore',
 }
 
+// Map string action to AuditAction enum
+export function mapAction(action: string): AuditAction {
+  const actionMap: Record<string, AuditAction> = {
+    'create': AuditAction.CREATE,
+    'read': AuditAction.READ,
+    'update': AuditAction.UPDATE,
+    'delete': AuditAction.DELETE,
+    'login': AuditAction.LOGIN,
+    'logout': AuditAction.LOGOUT,
+    'export': AuditAction.EXPORT,
+    'import': AuditAction.IMPORT,
+    'share': AuditAction.SHARE,
+    'comment': AuditAction.COMMENT,
+    'priority_change': AuditAction.PRIORITY_CHANGE,
+    'status_change': AuditAction.STATUS_CHANGE,
+    'workflow_create': AuditAction.WORKFLOW_CREATE,
+    'workflow_update': AuditAction.WORKFLOW_UPDATE,
+    'workflow_delete': AuditAction.WORKFLOW_DELETE,
+    'integration_connect': AuditAction.INTEGRATION_CONNECT,
+    'integration_disconnect': AuditAction.INTEGRATION_DISCONNECT,
+    'permission_change': AuditAction.PERMISSION_CHANGE,
+    'password_change': AuditAction.PASSWORD_CHANGE,
+    'email_verification': AuditAction.EMAIL_VERIFICATION,
+    'two_factor_enable': AuditAction.TWO_FACTOR_ENABLE,
+    'two_factor_disable': AuditAction.TWO_FACTOR_DISABLE,
+    'security_login_failed': AuditAction.SECURITY_LOGIN_FAILED,
+    'security_lockout': AuditAction.SECURITY_LOCKOUT,
+    'backup_create': AuditAction.BACKUP_CREATE,
+    'backup_restore': AuditAction.BACKUP_RESTORE,
+  }
+  return actionMap[action] || AuditAction.READ
+}
+
 export interface AuditLog {
   id: string
   userId: string
-  action: AuditAction
+  action: string  // Prisma stores action as string; use mapAction() to convert to enum
   resource: string
   resourceId: string
-  details: any
-  ipAddress?: string
-  userAgent?: string
+  details: any | null
+  ipAddress: string | null
+  userAgent: string | null
   timestamp: Date
-  metadata?: any
-  previousState?: any
-  newState?: any
+  metadata: any | null
+  previousState: any | null
+  newState: any | null
 }
 
 export class AuditService {
@@ -111,6 +144,7 @@ export class AuditService {
       metadata: log.metadata ? JSON.parse(log.metadata) : null,
       previousState: log.previousState ? JSON.parse(log.previousState) : null,
       newState: log.newState ? JSON.parse(log.newState) : null,
+      action: log.action as AuditAction, // Cast to enum for type safety
     }))
   }
 
