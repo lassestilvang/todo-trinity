@@ -1,13 +1,25 @@
-import type { Task } from '@/src/types/index'
+import type { Task, Priority, TaskStatus } from '@/src/types/index'
 
 // In-memory store for real-time events (in production, use Redis or similar)
 const recentEvents: Array<{
   id: string
-  type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed'
+  type:
+    | 'task_created'
+    | 'task_updated'
+    | 'task_deleted'
+    | 'task_commented'
+    | 'task_completed'
+    | 'priority_changed'
+    | 'conflict_detected'
+    | 'user_joined'
+    | 'user_left'
   task?: Partial<Task>
   taskId?: string
   userId?: string
   timestamp: number
+  oldPriority?: Priority
+  newPriority?: Priority
+  conflictId?: string
 }> = []
 
 const MAX_EVENTS = 100
@@ -27,11 +39,23 @@ const ACTIVITY_TIMEOUT = 30000 // 30 seconds before marking user as offline
 export function broadcastTaskCreate(task: any, userId?: string): void {
   const event: {
     id: string
-    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed'
+    type:
+      | 'task_created'
+      | 'task_updated'
+      | 'task_deleted'
+      | 'task_commented'
+      | 'task_completed'
+      | 'priority_changed'
+      | 'conflict_detected'
+      | 'user_joined'
+      | 'user_left'
     task?: Partial<Task>
     taskId?: string
     userId?: string
     timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
   } = {
     id: crypto.randomUUID(),
     type: 'task_created',
@@ -64,11 +88,23 @@ export function broadcastTaskCreate(task: any, userId?: string): void {
 export function broadcastTaskUpdate(task: any, userId?: string): void {
   const event: {
     id: string
-    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed'
+    type:
+      | 'task_created'
+      | 'task_updated'
+      | 'task_deleted'
+      | 'task_commented'
+      | 'task_completed'
+      | 'priority_changed'
+      | 'conflict_detected'
+      | 'user_joined'
+      | 'user_left'
     task?: Partial<Task>
     taskId?: string
     userId?: string
     timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
   } = {
     id: crypto.randomUUID(),
     type: 'task_updated',
@@ -127,11 +163,23 @@ export function broadcastTaskDelete(taskId: string, userId?: string): void {
 export function broadcastTaskComplete(task: any, userId?: string): void {
   const event: {
     id: string
-    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed'
+    type:
+      | 'task_created'
+      | 'task_updated'
+      | 'task_deleted'
+      | 'task_commented'
+      | 'task_completed'
+      | 'priority_changed'
+      | 'conflict_detected'
+      | 'user_joined'
+      | 'user_left'
     task?: Partial<Task>
     taskId?: string
     userId?: string
     timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
   } = {
     id: crypto.randomUUID(),
     type: 'task_completed',
@@ -159,11 +207,23 @@ export function broadcastTaskComplete(task: any, userId?: string): void {
 export function broadcastTaskComment(task: any, userId?: string): void {
   const event: {
     id: string
-    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed'
+    type:
+      | 'task_created'
+      | 'task_updated'
+      | 'task_deleted'
+      | 'task_commented'
+      | 'task_completed'
+      | 'priority_changed'
+      | 'conflict_detected'
+      | 'user_joined'
+      | 'user_left'
     task?: Partial<Task>
     taskId?: string
     userId?: string
     timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
   } = {
     id: crypto.randomUUID(),
     type: 'task_commented',
@@ -206,6 +266,120 @@ function updateUserPresenceInternal(userId: string, status: 'online' | 'away' | 
   setTimeout(cleanupInactiveUsers, 60000)
 }
 
+export function broadcastPriorityChange(task: any, oldPriority: Priority, newPriority: Priority, userId?: string): void {
+  const event: {
+    id: string
+    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed' | 'priority_changed' | 'conflict_detected' | 'user_joined' | 'user_left'
+    task?: Partial<Task>
+    taskId?: string
+    userId?: string
+    timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
+  } = {
+    id: crypto.randomUUID(),
+    type: 'priority_changed',
+    task: {
+      id: task.id,
+      title: task.title,
+      priority: newPriority,
+    },
+    taskId: task.id,
+    userId,
+    oldPriority,
+    newPriority,
+    timestamp: Date.now(),
+  }
+
+  recentEvents.push(event)
+  if (recentEvents.length > MAX_EVENTS) {
+    recentEvents.shift()
+  }
+
+  if (userId) {
+    updateUserPresenceInternal(userId, 'online', new Date().getTime())
+  }
+}
+
+export function broadcastConflictDetected(conflictId: string, taskIds: string[], userId?: string): void {
+  const event: {
+    id: string
+    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed' | 'priority_changed' | 'conflict_detected' | 'user_joined' | 'user_left'
+    task?: Partial<Task>
+    taskId?: string
+    userId?: string
+    timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
+  } = {
+    id: crypto.randomUUID(),
+    type: 'conflict_detected',
+    taskId: taskIds[0],
+    userId,
+    conflictId,
+    timestamp: Date.now(),
+  }
+
+  recentEvents.push(event)
+  if (recentEvents.length > MAX_EVENTS) {
+    recentEvents.shift()
+  }
+
+  if (userId) {
+    updateUserPresenceInternal(userId, 'online', new Date().getTime())
+  }
+}
+
+export function broadcastUserJoined(userId: string, workspaceId?: string): void {
+  const event: {
+    id: string
+    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed' | 'priority_changed' | 'conflict_detected' | 'user_joined' | 'user_left'
+    task?: Partial<Task>
+    taskId?: string
+    userId?: string
+    timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
+  } = {
+    id: crypto.randomUUID(),
+    type: 'user_joined',
+    userId,
+    timestamp: Date.now(),
+  }
+
+  recentEvents.push(event)
+  if (recentEvents.length > MAX_EVENTS) {
+    recentEvents.shift()
+  }
+}
+
+export function broadcastUserLeft(userId: string): void {
+  const event: {
+    id: string
+    type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed' | 'priority_changed' | 'conflict_detected' | 'user_joined' | 'user_left'
+    task?: Partial<Task>
+    taskId?: string
+    userId?: string
+    timestamp: number
+    oldPriority?: Priority
+    newPriority?: Priority
+    conflictId?: string
+  } = {
+    id: crypto.randomUUID(),
+    type: 'user_left',
+    userId,
+    timestamp: Date.now(),
+  }
+
+  recentEvents.push(event)
+  if (recentEvents.length > MAX_EVENTS) {
+    recentEvents.shift()
+  }
+}
+
 function cleanupInactiveUsers(): void {
   const now = Date.now()
   Array.from(userPresence.entries()).forEach(([userId, presence]) => {
@@ -240,11 +414,23 @@ export function updateUserPresence(userId: string, page?: string, workspaceId?: 
 
 export function getRecentEvents(since: number = 0, userId?: string): Array<{
   id: string
-  type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_commented' | 'task_completed'
+  type:
+    | 'task_created'
+    | 'task_updated'
+    | 'task_deleted'
+    | 'task_commented'
+    | 'task_completed'
+    | 'priority_changed'
+    | 'conflict_detected'
+    | 'user_joined'
+    | 'user_left'
   task?: Partial<Task>
   taskId?: string
   userId?: string
   timestamp: number
+  oldPriority?: Priority
+  newPriority?: Priority
+  conflictId?: string
 }> {
   let events = recentEvents.filter(event => event.timestamp > since)
 
