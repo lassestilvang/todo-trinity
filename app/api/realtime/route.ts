@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
-import { getRecentEvents, getUserPresence } from '@/lib/realtime'
+import { getRecentEvents, getUserPresence, updateUserPresence } from '@/lib/realtime'
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,6 +65,37 @@ export async function GET(request: NextRequest) {
     console.error('Error in realtime endpoint:', error)
     return NextResponse.json(
       { error: 'Failed to establish real-time connection' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'You must be signed in' },
+        { status: 401 }
+      )
+    }
+
+    const userId = session.user.id
+    const body = await request.json()
+    const { page, workspaceId } = body
+
+    // Update user presence
+    updateUserPresence(userId, page, workspaceId)
+
+    // Broadcast user joined event
+    // This will be picked up by other users subscribed to the same workspace
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error updating presence:', error)
+    return NextResponse.json(
+      { error: 'Failed to update presence' },
       { status: 500 }
     )
   }
