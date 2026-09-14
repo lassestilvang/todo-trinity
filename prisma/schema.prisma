@@ -17,6 +17,8 @@ model User {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
+  role              Role     @default(user)
+
   tasks             Task[]
   lists             List[]
   labels            Label[]
@@ -25,8 +27,10 @@ model User {
   notifications     Notification[]
   comments          Comment[]
   activityLogs      ActivityLog[]
+  auditLogs         AuditLog[]
   workspaces        WorkspaceMember[]
   settings          UserSetting[]
+  adminSettings     AdminSetting[]
   assignedTasks     Task[]    @relation("TaskAssignee")
   mentions          Mention[]
   connectedAccounts ConnectedAccount[]
@@ -369,11 +373,44 @@ enum TaskStatus {
   COMPLETED
 }
 
+enum Role {
+  admin
+  manager
+  user
+  viewer
+}
+
 enum Priority {
   LOW
   NORMAL
   HIGH
   URGENT
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String
+  resource      String
+  resourceId    String
+  details       String?
+  ipAddress     String?
+  userAgent     String?
+  timestamp     DateTime @default(now())
+  metadata      String?
+  previousState String?
+  newState      String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model AdminSetting {
+  id        String   @id @default(cuid())
+  category  String
+  key       String   @unique
+  value     String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
 }
 
 model Template {
