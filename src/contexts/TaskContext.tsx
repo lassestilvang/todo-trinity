@@ -49,6 +49,26 @@ const api = {
     return response.json()
   },
 
+  fetchPrioritySuggestions: async (userId?: string) => {
+    const uid = userId || (await api.getAuth()).user?.id
+    if (!uid) throw new Error('User not authenticated')
+    const response = await fetch(`/api/ai/priority?userId=${uid}`)
+    if (!response.ok) {
+      throw new Error('Failed to fetch priority suggestions')
+    }
+    return response.json()
+  },
+
+  fetchConflictDetection: async (userId?: string) => {
+    const uid = userId || (await api.getAuth()).user?.id
+    if (!uid) throw new Error('User not authenticated')
+    const response = await fetch(`/api/ai/conflicts?userId=${uid}`)
+    if (!response.ok) {
+      throw new Error('Failed to detect conflicts')
+    }
+    return response.json()
+  },
+
   createTask: async (taskData: {
     title: string
     description?: string
