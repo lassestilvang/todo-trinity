@@ -159,14 +159,36 @@ export const integrationConfigs: IntegrationConfig[] = [
     description: 'Two-way sync with Microsoft Outlook Calendar'
   },
   {
-    id: 'zapier',
-    name: 'Zapier',
-    type: 'automation',
-    provider: 'zapier',
-    authType: 'api_key',
-    scopes: ['*'],
-    icon: '⚡',
-    color: '#FF4D4F',
-    description: 'Connect with 5000+ apps via Zapier webhooks'
+    id: 'asana',
+    name: 'Asana',
+    type: 'project_management',
+    provider: 'asana',
+    authType: 'oauth',
+    scopes: ['tasks:read', 'tasks:write'],
+    icon: '📋',
+    color: '#008551',
+    description: 'Sync tasks with Asana projects and tasks'
+  },
+  {
+    id: 'monday-com',
+    name: 'Monday.com',
+    type: 'project_management',
+    provider: 'monday-com',
+    authType: 'oauth',
+    scopes: ['boards:read', 'boards:write'],
+    icon: '◼',
+    color: '#FF6D00',
+    description: 'Sync tasks with Monday.com boards'
+  },
+  {
+    id: 'trello',
+    name: 'Trello',
+    type: 'project_management',
+    provider: 'trello',
+    authType: 'oauth',
+    scopes: ['read', 'write'],
+    icon: '🃏',
+    color: '#0079BF',
+    description: 'Sync tasks with Trello boards and cards'
   }
 ]
