@@ -1,14 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { Task, Priority, TaskStatus } from '@/src/types/index'
 
-export interface TimeBlock {
-  startTime: Date
-  endTime: Date
-  taskId: string
-  taskTitle: string
-  priority: Priority
-}
-
 export interface Conflict {
   id: string
   type: 'time_overlap' | 'deadline_conflict' | 'dependency_conflict' | 'resource_conflict' | 'workload_conflict'
@@ -33,28 +25,23 @@ export interface ConflictResolution {
   estimatedImpact: 'low' | 'medium' | 'high'
 }
 
-export interface ConflictAnalysis {
-  conflicts: Conflict[]
-  summary: {
-    total: number
-    critical: number
-    high: number
-    medium: number
-    low: number
-  }
-  timeBlocks: TimeBlock[]
-  generatedAt: Date
+interface TimeBlock {
+  startTime: Date
+  endTime: Date
+  taskId: string
+  taskTitle: string
+  priority: Priority
 }
 
 export class ConflictDetector {
-  async detectConflicts(userId: string): Promise<ConflictAnalysis> {
+  async detectConflicts(userId: string): Promise<{ conflicts: Conflict[], summary: any, timeBlocks: TimeBlock[], generatedAt: Date }> {
     const tasks = await prisma.task.findMany({
       where: {
         userId,
         status: { not: 'COMPLETED' }
       },
       include: { labels: true }
-    })
+    }) as unknown as Task[]
 
     const timeBlocks = this.buildTimeBlocks(tasks)
     const conflicts: Conflict[] = []
@@ -126,6 +113,21 @@ export class ConflictDetector {
     return baseDurations[task.priority] || 120
   }
 
+  private overlaps(startA: Date, endA: Date, startB: Date, endB: Date): boolean {
+    return startA < endB && startB < endA
+  }
+
+  private calculateOverlapMinutes(blockA: TimeBlock, blockB: TimeBlock): number {
+    const overlapStart = blockA.startTime > blockB.startTime ? blockA.startTime : blockB.startTime
+    const overlapEnd = blockA.endTime < blockB.endTime ? blockA.endTime : blockB.endTime
+    return Math.max(0, (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60))
+  }
+
+  private estimateMinutes(priority: Priority): number {
+    const durations = { [Priority.URGENT]: 60, [Priority.HIGH]: 90, [Priority.NORMAL]: 120, [Priority.LOW]: 60 }
+    return durations[priority] || 120
+  }
+
   private detectTimeOverlaps(timeBlocks: TimeBlock[]): Conflict[] {
     const conflicts: Conflict[] = []
 
@@ -134,7 +136,6 @@ export class ConflictDetector {
         const blockA = timeBlocks[i]
         const blockB = timeBlocks[j]
 
-        // Check for overlap
         if (this.overlaps(blockA.startTime, blockA.endTime, blockB.startTime, blockB.endTime)) {
           const overlapMinutes = this.calculateOverlapMinutes(blockA, blockB)
 
@@ -177,27 +178,11 @@ export class ConflictDetector {
     return conflicts
   }
 
-  private overlaps(startA: Date, endA: Date, startB: Date, endB: Date): boolean {
-    return startA < endB && startB < endA
-  }
-
-  private calculateOverlapMinutes(blockA: TimeBlock, blockB: TimeBlock): number {
-    const overlapStart = blockA.startTime > blockB.startTime ? blockA.startTime : blockB.startTime
-    const overlapEnd = blockA.endTime < blockB.endTime ? blockA.endTime : blockB.endTime
-    return Math.max(0, (overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60))
-  }
-
-  private estimateMinutes(priority: Priority): number {
-    const durations = { [Priority.URGENT]: 60, [Priority.HIGH]: 90, [Priority.NORMAL]: 120, [Priority.LOW]: 60 }
-    return durations[priority] || 120
-  }
-
   private detectDeadlineConflicts(tasks: Task[]): Conflict[] {
     const conflicts: Conflict[] = []
     const now = new Date()
 
-    // Group tasks by deadline day
-    const deadlineGroups = new Map<string, Task[]>()
+    const deadlineGroups: Map<string, Task[]> = new Map()
 
     for (const task of tasks) {
       if (!task.dueDate) continue
@@ -211,10 +196,9 @@ export class ConflictDetector {
       deadlineGroups.get(dayKey)!.push(task)
     }
 
-    // Check each day for too many high-priority tasks
-    for (const [day, dayTasks] of deadlineGroups) {
-      const highPriorityCount = dayTasks.filter(t => t.priority === Priority.URGENT || t.priority === Priority.HIGH).length
-      const totalEstimatedHours = dayTasks.reduce((sum, t) => sum + this.estimateTaskDuration(t) / 60, 0)
+    for (const [day, dayTasks] of Array.from(deadlineGroups.entries())) {
+      const highPriorityCount = dayTasks.filter((t): t is Task => true).filter(t => t.priority === Priority.URGENT || t.priority === Priority.HIGH).length
+      const totalEstimatedHours = dayTasks.reduce((sum: number, t: Task) => sum + this.estimateTaskDuration(t) / 60, 0)
 
       if (highPriorityCount > 3) {
         conflicts.push({
@@ -223,19 +207,19 @@ export class ConflictDetector {
           severity: 'high',
           title: `Too many high-priority tasks due on ${day}`,
           description: `${highPriorityCount} urgent/high priority tasks due same day, ${dayTasks.length} total tasks (${totalEstimatedHours.toFixed(1)}h estimated)`,
-          affectedTasks: dayTasks.map(t => t.id),
+          affectedTasks: dayTasks.map((t: Task) => t.id),
           suggestedResolution: 'Reschedule some tasks to different days or reduce scope',
           resolutions: dayTasks
-            .filter(t => t.priority !== Priority.URGENT)
+            .filter((t: Task) => t.priority !== Priority.URGENT)
             .slice(0, 2)
-            .map(task => ({
+            .map((task: Task) => ({
               id: crypto.randomUUID(),
-              type: 'reschedule',
+              type: 'reschedule' as const,
               title: `Reschedule "${task.title}"`,
               description: `Move to a less busy day`,
               affectedTaskId: task.id,
               newStartTime: this.findAlternativeDay(task, dayTasks),
-              estimatedImpact: 'medium'
+              estimatedImpact: 'medium' as const
             })),
           detectedAt: new Date()
         })
@@ -248,15 +232,16 @@ export class ConflictDetector {
           severity: 'medium',
           title: `Overloaded day: ${day}`,
           description: `${totalEstimatedHours.toFixed(1)} hours of work scheduled in one day`,
-          affectedTasks: dayTasks.map(t => t.id),
+          affectedTasks: dayTasks.map((t: Task) => t.id),
           suggestedResolution: 'Distribute tasks across multiple days',
-          resolutions: dayTasks.slice(0, 2).map(task => ({
+          resolutions: dayTasks.slice(0, 2).map((task: Task) => ({
             id: crypto.randomUUID(),
-            type: 'reschedule',
+            type: 'reschedule' as const,
             title: `Move "${task.title}" to another day`,
+            description: `Move to a less busy day`,
             affectedTaskId: task.id,
             newStartTime: this.findAlternativeDay(task, dayTasks),
-            estimatedImpact: 'low'
+            estimatedImpact: 'low' as const
           })),
           detectedAt: new Date()
         })
@@ -273,7 +258,6 @@ export class ConflictDetector {
       candidate.setDate(now.getDate() + i)
       candidate.setHours(9, 0, 0, 0)
 
-      // Check if this day has capacity
       const dayKey = candidate.toISOString().split('T')[0]
       const dayTasks = excludeTasks.filter(t => {
         if (!t.dueDate) return false
@@ -286,17 +270,12 @@ export class ConflictDetector {
   }
 
   private detectDependencyConflicts(tasks: Task[]): Conflict[] {
-    // Simplified - check if tasks mention dependencies in description
     const conflicts: Conflict[] = []
 
     for (const task of tasks) {
-      const description = (task.description || '').toLowerCase()
+      const description = (task.description || '') as string;
       if (description.includes('depends on') || description.includes('after') || description.includes('blocked by')) {
-        // Find potential dependency tasks
-        const potentialDeps = tasks.filter(t =>
-          t.id !== task.id &&
-          description.includes(t.title.toLowerCase().substring(0, 20))
-        )
+        const potentialDeps = tasks.filter((t): t is Task => t.id !== task.id && description.includes(t.title.toLowerCase().substring(0, 20)))
 
         if (potentialDeps.length > 0) {
           conflicts.push({
@@ -305,15 +284,16 @@ export class ConflictDetector {
             severity: 'medium',
             title: `Potential dependency for "${task.title}"`,
             description: `Task description suggests it depends on other tasks that may not be completed`,
-            affectedTasks: [task.id, ...potentialDeps.map(t => t.id)],
+            affectedTasks: [task.id, ...potentialDeps.map((dep: Task) => dep.id)],
             suggestedResolution: 'Verify dependency order and schedule accordingly',
-            resolutions: potentialDeps.map(dep => ({
+            resolutions: potentialDeps.map((dep: Task) => ({
               id: crypto.randomUUID(),
-              type: 'reschedule',
+              type: 'reschedule' as const,
               title: `Schedule "${dep.title}" before "${task.title}"`,
+              description: `Schedule this task before its dependent task`,
               affectedTaskId: dep.id,
               newStartTime: new Date(),
-              estimatedImpact: 'medium'
+              estimatedImpact: 'medium' as const
             })),
             detectedAt: new Date()
           })
@@ -328,7 +308,6 @@ export class ConflictDetector {
     const conflicts: Conflict[] = []
     const now = new Date()
 
-    // Check next 7 days
     for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
       const dayStart = new Date(now)
       dayStart.setDate(now.getDate() + dayOffset)
@@ -354,11 +333,12 @@ export class ConflictDetector {
             .slice(0, 2)
             .map(block => ({
               id: crypto.randomUUID(),
-              type: 'reschedule',
+              type: 'reschedule' as const,
               title: `Move "${block.taskTitle}"`,
+              description: `Move to a less busy day`,
               affectedTaskId: block.taskId,
               newStartTime: this.findNextAvailableSlot(dayEnd),
-              estimatedImpact: 'low'
+              estimatedImpact: 'low' as const
             })),
           detectedAt: new Date()
         })
@@ -377,7 +357,7 @@ export class ConflictDetector {
 
   private detectResourceConflicts(tasks: Task[]): Conflict[] {
     const conflicts: Conflict[] = []
-    const labelUsage = new Map<string, Task[]>()
+    const labelUsage: Map<string, Task[]> = new Map()
 
     for (const task of tasks) {
       for (const label of task.labels || []) {
@@ -388,8 +368,7 @@ export class ConflictDetector {
       }
     }
 
-    // Check for context switching
-    for (const [label, labelTasks] of labelUsage) {
+    for (const [label, labelTasks] of Array.from(labelUsage.entries())) {
       if (labelTasks.length > 5) {
         conflicts.push({
           id: crypto.randomUUID(),
@@ -397,15 +376,15 @@ export class ConflictDetector {
           severity: 'low',
           title: `Frequent context switching: ${label}`,
           description: `${labelTasks.length} tasks with label "${label}" - consider batching similar tasks`,
-          affectedTasks: labelTasks.map(t => t.id),
+          affectedTasks: labelTasks.map((t: Task) => t.id),
           suggestedResolution: 'Group similar tasks together in your schedule',
           resolutions: [{
             id: crypto.randomUUID(),
-            type: 'reschedule',
+            type: 'reschedule' as const,
             title: `Batch "${label}" tasks`,
             description: `Schedule all "${label}" tasks consecutively`,
             affectedTaskId: labelTasks[0].id,
-            estimatedImpact: 'low'
+            estimatedImpact: 'low' as const
           }],
           detectedAt: new Date()
         })
