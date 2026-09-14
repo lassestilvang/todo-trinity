@@ -1,155 +1,241 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTaskContext } from '@/src/contexts/TaskContext'
+import type { Task, Priority } from '@/src/types/index'
+import { TaskStatus } from '@/src/types/index'
 
-interface TaskEvent {
+export interface RealtimeEvent {
   id: string
-  type: 'task_created' | 'task_updated' | 'task_deleted' | 'task_completed' | 'task_commented'
-  task?: {
-    id: string
-    title: string
-    description?: string
-    status: string
-    priority?: string
-    dueDate?: string
-    completedAt?: string
-    listId?: string
-  }
-  taskId: string
+  type:
+    | 'task_created'
+    | 'task_updated'
+    | 'task_deleted'
+    | 'task_commented'
+    | 'task_completed'
+    | 'priority_changed'
+    | 'conflict_detected'
+    | 'user_joined'
+    | 'user_left'
+  task?: Partial<Task>
+  taskId?: string
   userId?: string
   timestamp: number
+  oldPriority?: Priority
+  newPriority?: Priority
+  conflictId?: string
 }
 
-interface UserPresence {
+export interface UserPresence {
   userId: string
   status: 'online' | 'away' | 'offline'
   lastSeen: number
-  currentTasks: string[]
+  currentTasks?: string[]
   workspaceId?: string
   page?: string
 }
 
-interface RealtimeEvents {
-  events: TaskEvent[]
+export interface RealtimeState {
+  isConnected: boolean
+  events: RealtimeEvent[]
   presence: UserPresence[]
+  onlineUsers: number
+  lastEvent?: RealtimeEvent
 }
 
-export function useRealtime(workspaceId?: string, userId?: string) {
-  const [events, setEvents] = useState<TaskEvent[]>([])
-  const [presence, setPresence] = useState<UserPresence[]>([])
-  const [isConnected, setIsConnected] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function useRealtime(workspaceId?: string) {
+  const [state, setState] = useState<RealtimeState>({
+    isConnected: false,
+    events: [],
+    presence: [],
+    onlineUsers: 0,
+  })
+  const eventSourceRef = useRef<EventSource | null>(null)
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastEventIdRef = useRef<number>(0)
+  const { updateTask, deleteTask } = useTaskContext()
 
-  useEffect(() => {
-    if (!userId) return
+  const connect = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+    }
 
-    let reconnectAttempts = 0
-    const maxReconnectAttempts = 10
-    const baseReconnectDelay = 3000
-    let source: EventSource | null = null
+    const params = new URLSearchParams()
+    if (workspaceId) params.append('workspaceId', workspaceId)
+    if (lastEventIdRef.current > 0) params.append('since', lastEventIdRef.current.toString())
 
-    const connect = () => {
-      setIsConnected(true)
-      setError(null)
+    const eventSource = new EventSource(`/api/realtime?${params.toString()}`)
+    eventSourceRef.current = eventSource
 
+    eventSource.onopen = () => {
+      setState(prev => ({ ...prev, isConnected: true }))
+    }
+
+    eventSource.onmessage = (event) => {
       try {
-        const url = `/api/realtime?workspaceId=${workspaceId || ''}&userId=${userId}`
-        source = new EventSource(url)
-
-        source.onopen = () => {
-          setIsConnected(true)
-          reconnectAttempts = 0
+        const data = JSON.parse(event.data)
+        if (data.type === 'sync') {
+          // Initial sync with missed events
+          data.events.forEach((event: RealtimeEvent) => {
+            lastEventIdRef.current = Math.max(lastEventIdRef.current, event.timestamp)
+            handleEvent(event)
+          })
+        } else if (data.type === 'presence_update') {
+          setState(prev => ({
+            ...prev,
+            presence: data.users || [],
+            onlineUsers: data.users?.filter((u: UserPresence) => u.status === 'online').length || 0,
+          }))
+        } else {
+          // Individual event
+          lastEventIdRef.current = Math.max(lastEventIdRef.current, data.timestamp)
+          handleEvent(data)
         }
-
-        source.onerror = (event) => {
-          setIsConnected(false)
-          console.error('SSE error:', event)
-          source?.close()
-          attemptReconnect()
-        }
-
-        source.onmessage = (event) => {
-          try {
-            const data = event.data
-
-            // Handle heartbeat
-            if (data === ': heartbeat') {
-              return
-            }
-
-            // Handle presence updates
-            if (data.startsWith('presence:')) {
-              const presenceData = data.replace('presence:', '')
-              const parsed = JSON.parse(presenceData)
-              setPresence(prev => {
-                // Remove old entry and add/update
-                const existingIndex = prev.findIndex(p => p.userId === parsed.userId)
-                if (existingIndex >= 0) {
-                  return [...prev.slice(0, existingIndex), parsed, ...prev.slice(existingIndex + 1)]
-                }
-                return [parsed, ...prev].slice(0, 50)
-              })
-              return
-            }
-
-            // Handle sync message
-            if (data.startsWith('data: ')) {
-              const parsed = JSON.parse(data.replace('data: ', ''))
-
-              if (parsed.type === 'sync') {
-                // Send missed events
-                setEvents(parsed.events || [])
-              } else {
-                // Regular event
-                setEvents(prev => {
-                  const newEvent = parsed as TaskEvent
-                  // Avoid duplicates
-                  if (!prev.some(e => e.id === newEvent.id)) {
-                    return [newEvent, ...prev].slice(0, 50)
-                  }
-                  return prev
-                })
-              }
-            }
-          } catch (err) {
-            console.error('Failed to parse SSE message:', err)
-          }
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to connect')
-        setIsConnected(false)
-        attemptReconnect()
+      } catch (error) {
+        console.error('Failed to parse realtime event:', error)
       }
     }
 
-    const attemptReconnect = () => {
-      if (reconnectAttempts >= maxReconnectAttempts) {
-        setError('Max reconnection attempts reached')
-        setIsConnected(false)
-        return
-      }
-
-      reconnectAttempts++
-      const delay = baseReconnectDelay * reconnectAttempts
-
-      setTimeout(() => {
-        connect()
-      }, delay)
+    eventSource.onerror = () => {
+      setState(prev => ({ ...prev, isConnected: false }))
+      eventSource.close()
+      scheduleReconnect()
     }
+  }, [workspaceId])
 
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+    }
+    reconnectTimeoutRef.current = setTimeout(() => {
+      connect()
+    }, 5000)
+  }, [connect])
+
+  const handleEvent = useCallback((event: RealtimeEvent) => {
+    setState(prev => ({
+      ...prev,
+      events: [event, ...prev.events].slice(0, 100),
+      lastEvent: event,
+    }))
+
+    // Handle task updates in local state
+    switch (event.type) {
+      case 'task_created':
+        if (event.task) {
+          // The task will be fetched via the regular API
+          // We just invalidate the cache
+          console.log('Task created:', event.task.id)
+        }
+        break
+
+      case 'task_updated':
+        if (event.task && event.task.id) {
+          // Update local task state
+          updateTask(event.task.id, event.task as Partial<Task>)
+        }
+        break
+
+      case 'task_deleted':
+        if (event.taskId) {
+          deleteTask(event.taskId)
+        }
+        break
+
+      case 'task_completed':
+        if (event.task && event.task.id) {
+          updateTask(event.task.id, { status: TaskStatus.COMPLETED, completedAt: event.task.completedAt })
+        }
+        break
+
+      case 'priority_changed':
+        if (event.task && event.task.id && event.newPriority) {
+          updateTask(event.task.id, { priority: event.newPriority })
+        }
+        break
+
+      case 'conflict_detected':
+        // Conflicts will be detected via the conflict detection API
+        console.log('Conflict detected:', event.conflictId)
+        break
+
+      case 'user_joined':
+        console.log('User joined:', event.userId)
+        break
+
+      case 'user_left':
+        console.log('User left:', event.userId)
+        break
+    }
+  }, [updateTask, deleteTask])
+
+  // Update user presence
+  const updatePresence = useCallback(async (page?: string, workspaceId?: string) => {
+    try {
+      await fetch('/api/realtime/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page, workspaceId }),
+      })
+    } catch (error) {
+      console.error('Failed to update presence:', error)
+    }
+  }, [])
+
+  // Subscribe to a specific task
+  const subscribeToTask = useCallback((taskId: string) => {
+    // Track current task in presence
+    updatePresence(undefined, workspaceId)
+  }, [updatePresence, workspaceId])
+
+  // Unsubscribe from a task
+  const unsubscribeFromTask = useCallback((taskId: string) => {
+    // Would need to implement task-specific unsubscription
+  }, [])
+
+  // Cleanup on unmount
+  useEffect(() => {
     connect()
 
     return () => {
-      source?.close()
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
     }
-  }, [userId, workspaceId])
+  }, [connect])
+
+  // Update presence on page visibility change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updatePresence()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [updatePresence])
 
   return {
-    events,
-    presence,
-    isConnected,
-    error,
-    totalEvents: events.length,
-    unreadCount: events.filter(e => new Date().getTime() - e.timestamp < 60000).length
+    ...state,
+    connect,
+    disconnect: () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+        eventSourceRef.current = null
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
+      setState(prev => ({ ...prev, isConnected: false }))
+    },
+    updatePresence,
+    subscribeToTask,
+    unsubscribeFromTask,
   }
 }
+
+export default useRealtime
