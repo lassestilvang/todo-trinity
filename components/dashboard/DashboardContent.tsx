@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { TaskStatus, Priority, Notification } from '@/src/types/index'
 import { useTaskContext } from '@/src/contexts'
+import { useUser } from '@/src/contexts'
 import WorkspacePresence from '@/components/workspace/WorkspacePresence'
 import { useWorkspaceContext } from '@/src/contexts/WorkspaceContext'
 import { useNotifications } from '@/src/hooks/useLists'
@@ -23,6 +24,8 @@ import CalendarView from '@/components/calendar/CalendarView'
 import GanttView from '@/components/views/GanttView'
 import KanbanBoard from '@/components/views/KanbanBoard'
 import RealtimeStatus from '@/components/dashboard/RealtimeStatus'
+import AIPrioritySuggestions from '@/components/dashboard/AIPrioritySuggestions'
+import ConflictDetectionPanel from '@/components/dashboard/ConflictDetectionPanel'
 
 export default function DashboardContent() {
   const taskContext = useTaskContext()
@@ -40,6 +43,8 @@ export default function DashboardContent() {
   const [showMentions, setShowMentions] = useState(false)
   const [showProductivityAnalytics, setShowProductivityAnalytics] = useState(false)
   const [showAITaskDecomposer, setShowAITaskDecomposer] = useState(false)
+  const [showAIPrioritySuggestions, setShowAIPrioritySuggestions] = useState(false)
+  const [showConflictDetection, setShowConflictDetection] = useState(false)
 
   if (taskContext.loading) {
     return (
@@ -146,6 +151,18 @@ export default function DashboardContent() {
                 Gamification
               </button>
               <button
+                onClick={() => setShowAIPrioritySuggestions(!showAIPrioritySuggestions)}
+                className={`px-4 py-2 rounded ${showAIPrioritySuggestions ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                AI Suggestions
+              </button>
+              <button
+                onClick={() => setShowConflictDetection(!showConflictDetection)}
+                className={`px-4 py-2 rounded ${showConflictDetection ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
+              >
+                Schedule Check
+              </button>
+              <button
                 onClick={() => setShowActivity(!showActivity)}
                 className={`px-4 py-2 rounded ${showActivity ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}`}
               >
@@ -248,6 +265,12 @@ export default function DashboardContent() {
           <AITaskDecomposer
             onClose={() => setShowAITaskDecomposer(false)}
           />
+        )}
+        {showAIPrioritySuggestions && (
+          <AIPrioritySuggestions />
+        )}
+        {showConflictDetection && (
+          <ConflictDetectionPanel />
         )}
       </main>
     </div>
