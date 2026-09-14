@@ -1,0 +1,6 @@
+export { default as GamificationPanel } from '@/components/dashboard/GamificationPanel'
+export { default as AchievementBadge } from '@/components/gamification/AchievementBadge'
+export { default as Leaderboard } from '@/components/gamification/Leaderboard'
+export { default as SkillTree } from '@/components/gamification/SkillTree'
+export { default as RewardStore } from '@/components/gamification/RewardStore'
+export { default as TeamChallenges } from '@/components/gamification/TeamChallenges'
