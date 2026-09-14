@@ -4,9 +4,9 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 
 // DELETE /api/activity/[id] - Delete an activity log (admin only)
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await context.params
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
