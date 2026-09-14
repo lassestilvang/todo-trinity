@@ -122,7 +122,7 @@ export class CompletionPredictor {
       .slice(0, 10) // Top 10 similar
   }
 
-  private extractKeywords(title: string | undefined, description: string | undefined): Set<string> {
+  private extractKeywords(title?: string | null | undefined, description?: string | null | undefined): Set<string> {
     const text = `${title || ''} ${description || ''}`.toLowerCase()
     const words = text.split(/\s+/)
 
