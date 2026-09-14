@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { TaskStatus, Priority, Notification } from '@/src/types/index'
 import { Zap } from 'lucide-react'
 import { useTaskContext } from '@/src/contexts'
