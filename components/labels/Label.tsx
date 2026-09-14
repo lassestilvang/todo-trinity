@@ -24,7 +24,7 @@ export default function Label({ label, onDelete }: LabelProps) {
   }
 
   const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this label?')) {
+    if (typeof window !== 'undefined' && window.confirm('Are you sure you want to delete this label?')) {
       onDelete(label.id)
     }
   }
