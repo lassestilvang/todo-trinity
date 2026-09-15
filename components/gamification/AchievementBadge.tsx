@@ -58,8 +58,8 @@ export default function AchievementBadge({
 
   return (
     <motion.div
-      while={{ scale: 1.05 }}
       whileHover={{ scale: glowEffect ? 1.1 : 1.05 }}
+      whileTap={{ scale: 0.95 }}
       className={`relative cursor-pointer rounded-full flex flex-col items-center justify-center
         ${rarityColors[rarity]} ${rarityBorders[rarity]}
         ${isUnlocked ? 'ring-2 ring-offset-2' : 'opacity-50 grayscale'}
