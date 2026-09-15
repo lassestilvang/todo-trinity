@@ -92,7 +92,7 @@ export interface SkillTree {
 export interface Challenge {
   id: string
   title: string
-  description?: string
+  description: string | null
   type: ChallengeType
   startDate: string
   endDate: string
