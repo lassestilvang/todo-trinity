@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const completed = searchParams.get('completed')
     const priority = searchParams.get('priority')
 
-    const where: any = { userId }
+    const where: any = { userId: userId }
 
     if (view === 'today') {
       const today = new Date()
@@ -83,9 +83,9 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: [
-        { status: 'asc' },
-        { priority: 'desc' },
-        { createdAt: 'desc' },
+        { status: 'asc' as const },
+        { priority: 'desc' as const },
+        { createdAt: 'desc' as const },
       ],
     })
 
