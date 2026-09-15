@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
+import type { UserSetting } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,7 +78,7 @@ export async function PUT(request: NextRequest) {
       integrations: 'integrations',
     }
 
-    const updates: Partial<import('@/lib/prisma').UserSetting> = {}
+    const updates: Partial<UserSetting> = {}
     for (const [key, value] of Object.entries(body)) {
       if (key in allowedUpdates) {
         ;(updates as any)[allowedUpdates[key]] = value
