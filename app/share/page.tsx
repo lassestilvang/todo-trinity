@@ -167,9 +167,9 @@ export default function SharePage() {
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
           <h3 className="text-sm font-medium text-gray-700 mb-2">Quick Commands (Voice Input)</h3>
           <p className="text-sm text-gray-600">
-            Use the microphone button to create tasks by voice:r/
-            "Create task: Remember to review the quarterly report"r/
-            "Add task: Contact client about project timeline"
+            Use the microphone button to create tasks by voice:
+            &quot;Create task: Remember to review the quarterly report&quot;
+            &quot;Add task: Contact client about project timeline&quot;
           </p>
         </div>
       </motion.div>
