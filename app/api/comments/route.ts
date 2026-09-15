@@ -173,6 +173,7 @@ export async function POST(request: NextRequest) {
           data: {
             commentId: comment.id,
             userId: mentionedUser.id,
+            mentionedUserId: mentionedUser.id,
             read: false
           }
         })
