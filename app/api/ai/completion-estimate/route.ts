@@ -112,7 +112,6 @@ export async function GET(request: NextRequest) {
       updatedAt: task.updatedAt.toISOString(),
       userId: task.userId,
       listId: task.listId,
-      assignedToId: task.assignedToId
     }
 
     const prediction = await completionPredictor.predictCompletionTime(userId, taskData)
