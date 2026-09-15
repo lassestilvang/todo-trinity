@@ -14,13 +14,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Check if user is admin
+    // Check if user is admin or manager
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: { roles: { select: { role: true } } },
     })
 
-    const userRoles = user?.roles?.map(r => r.role) || []
+    const userRoles = user?.roles?.map(r => r.role?.name) || []
     const isAdmin = userRoles.includes('admin')
     const isManager = userRoles.includes('manager')
 
@@ -107,7 +107,7 @@ export async function PUT(request: NextRequest) {
       select: { roles: { select: { role: true } } },
     })
 
-    const userRoles = user?.roles?.map(r => r.role) || []
+    const userRoles = user?.roles?.map(r => r.role?.name) || []
     const isAdmin = userRoles.includes('admin')
 
     if (!isAdmin) {
@@ -186,11 +186,7 @@ export async function PUT(request: NextRequest) {
         email: true,
         image: true,
         createdAt: true,
-      },
-      include: {
-        roles: {
-          select: { role: true },
-        },
+        roles: { select: { role: true } },
       },
     })
 
@@ -221,7 +217,7 @@ export async function DELETE(request: NextRequest) {
       select: { roles: { select: { role: true } } },
     })
 
-    const userRoles = user?.roles?.map(r => r.role) || []
+    const userRoles = user?.roles?.map(r => r.role?.name) || []
     const isAdmin = userRoles.includes('admin')
 
     if (!isAdmin) {
