@@ -17,10 +17,14 @@ export async function GET(request: NextRequest) {
     // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { roles: { select: { role: true } } },
     })
 
-    if (user?.role !== 'admin') {
+    const userRoles = user?.roles?.map(r => r.role) || []
+    const isAdmin = userRoles.includes('admin')
+    const isManager = userRoles.includes('manager')
+
+    if (!isAdmin && !isManager) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -51,7 +55,7 @@ export async function GET(request: NextRequest) {
           name: true,
           email: true,
           image: true,
-          role: true,
+          roles: { select: { role: true } },
           createdAt: true,
           _count: {
             select: {
@@ -100,10 +104,13 @@ export async function PUT(request: NextRequest) {
     // Only admins can modify users
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { roles: { select: { role: true } } },
     })
 
-    if (user?.role !== 'admin') {
+    const userRoles = user?.roles?.map(r => r.role) || []
+    const isAdmin = userRoles.includes('admin')
+
+    if (!isAdmin) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -127,16 +134,63 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Update the user role through UserRole relation
+    if (role === 'admin') {
+      // Create or update admin role
+      const adminRole = await prisma.role.upsert({
+        where: { name: 'admin' },
+        update: {},
+        create: {
+          name: 'admin',
+          description: 'Administrator role',
+          permissions: []
+        },
+      })
+
+      await prisma.userRole.upsert({
+        where: { userId_roleId: { userId, roleId: adminRole.id } },
+        update: {},
+        create: { userId, roleId: adminRole.id },
+      })
+    } else if (['manager', 'user', 'viewer'].includes(role)) {
+      // For other roles, ensure they exist
+      const roleName = role.charAt(0).toUpperCase() + role.slice(1)
+      const existingRole = await prisma.role.upsert({
+        where: { name: roleName },
+        update: {},
+        create: {
+          name: roleName,
+          description: `${roleName} role`,
+          permissions: []
+        },
+      })
+
+      await prisma.userRole.upsert({
+        where: { userId_roleId: { userId, roleId: existingRole.id } },
+        update: {},
+        create: { userId, roleId: existingRole.id },
+      })
+    } else {
+      // Clean up any existing roles if invalid role provided
+      await prisma.userRole.deleteMany({
+        where: { userId },
+      })
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role, name, email },
+      data: { name, email },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
         image: true,
         createdAt: true,
+      },
+      include: {
+        roles: {
+          select: { role: true },
+        },
       },
     })
 
@@ -164,10 +218,13 @@ export async function DELETE(request: NextRequest) {
     // Only admins can delete users
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { roles: { select: { role: true } } },
     })
 
-    if (user?.role !== 'admin') {
+    const userRoles = user?.roles?.map(r => r.role) || []
+    const isAdmin = userRoles.includes('admin')
+
+    if (!isAdmin) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
