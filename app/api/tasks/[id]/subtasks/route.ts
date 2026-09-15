@@ -21,7 +21,6 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const subtasks = await prisma.subTask.findMany({
       where: {
         taskId: id,
-        userId: session.user.id
       },
       orderBy: { createdAt: 'asc' }
     })
