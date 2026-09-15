@@ -112,7 +112,7 @@ export default function AdminDashboard({ onClose }: { onClose?: () => void }) {
         <div className="bg-white rounded-xl p-8 text-center max-w-md">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h2>
           <p className="text-gray-600 mb-6">
-            You don't have permission to access the admin dashboard.
+            You don&apos;t have permission to access the admin dashboard.
           </p>
           <button
             onClick={onClose}
