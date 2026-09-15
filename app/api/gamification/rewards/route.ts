@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAvailableRewards, claimReward, getUserRewards, hasClaimedReward, redeemReward } from '@/lib/gamification/rewards'
+import { getAvailableRewards, claimReward, getUserRewards, hasClaimedReward, getRewardCatalog, redeemReward } from '@/lib/gamification/rewards'
 
 // GET /api/gamification/rewards - Get available rewards for user
 export async function GET(request: Request) {
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
         id: cr.id,
         userId: cr.userId,
         rewardId: cr.rewardId,
-        claimedAt: cr.claimedAt?.toISOString() || null,
+        claimedAt: cr.claimedAt || null,
         isClaimed: cr.isClaimed,
       })),
     })
