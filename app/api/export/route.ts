@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
             }
           },
           subtasks: true,
-          taskDependencies: true,
+          dependencies: true,
         },
         orderBy: { createdAt: 'desc' }
       })
