@@ -1,222 +1,16 @@
-// ... existing content until the end of the file
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
 }
 
-// Gamification Models
-model Achievement {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  icon          String   @default("🏆")
-  category      AchievementCategory
-  points        Int      @default(10)
-  rarity        Rarity   @default(COMMON)
-  criteria      Json     // Criteria for unlocking the achievement
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  userAchievements UserAchievement[]
-
-  @@index([category, rarity])
-  @@map("achievements")
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
 }
 
-model UserAchievement {
-  id            String   @id @default(cuid())
-  userId        String
-  achievementId String
-  unlockedAt    DateTime @default(now())
-  progress      Int      @default(0) // Progress towards achievement (0-100)
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, achievementId])
-  @@map("user_achievements")
-}
-
-model UserReward {
-  id            String   @id @default(cuid())
-  userId        String
-  rewardId      String
-  claimedAt     DateTime?
-  isClaimed     Boolean  @default(false)
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, rewardId])
-  @@map("user_rewards")
-}
-
-model SocialActivity {
-  id           String   @id @default(cuid())
-  userId       String
-  type         String   // task_completed, achievement_unlocked, challenge_won, streak_milestone
-  title        String
-  description  String?
-  createdAt    DateTime @default(now())
-  metadata     Json?
-
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([type, createdAt])
-  @@map("social_activities")
-}
-
-model UserShare {
-  id            String   @id @default(cuid())
-  userId        String
-  type          String   // achievement_unlock, milestone, challenge_win, badge_earned
-  message       String
-  platform      String?  // twitter, linkedin, discord, facebook
-  postedAt      DateTime
-  metadata      Json?
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([postedAt])
-  @@map("user_shares")
-}
-
-model UserPoints {
-  id            String   @id @default(cuid())
-  userId        String
-  totalPoints   Int      @default(0)
-  level         Int      @default(1)
-  currentLevelXp Int     @default(0)
-  levelXpRequired Int    @default(100)
-  lastUpdated   DateTime @updatedAt
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId])
-  @@map("user_points")
-}
-
-model UserLevel {
-  id            String   @id @default(cuid())
-  userId        String
-  level         Int      @default(1)
-  xp            Int      @default(0)
-  xpToNextLevel Int      @default(100)
-  lastUpdated   DateTime @updatedAt
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId])
-  @@map("user_levels")
-}
-
-model Leaderboard {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  type          LeaderboardType
-  period        LeaderboardPeriod
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  entries       LeaderboardEntry[]
-
-  @@index([type, period])
-  @@map("leaderboards")
-}
-
-model LeaderboardEntry {
-  id            String   @id @default(cuid())
-  leaderboardId String
-  userId        String
-  rank          Int
-  score         Int
-  previousRank  Int?
-  updatedAt     DateTime @updatedAt
-
-  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([leaderboardId, userId])
-  @@index([rank])
-  @@map("leaderboard_entries")
-}
-
-model Challenge {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?
-  type          ChallengeType
-  startDate     DateTime
-  endDate       DateTime
-  rewardPoints  Int      @default(50)
-  rewardBadgeId String?
-  maxParticipants Int?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  participants  ChallengeParticipant[]
-  rewardBadge   Achievement? @relation(fields: [rewardBadgeId], references: [id])
-
-  @@index([startDate, endDate])
-  @@map("challenges")
-}
-
-model ChallengeParticipant {
-  id            String   @id @default(cuid())
-  challengeId   String
-  userId        String
-  joinedAt      DateTime @default(now())
-  progress      Int      @default(0) // Progress percentage
-  score         Int      @default(0)
-  completed     Boolean  @default(false)
-  completedAt   DateTime?
-
-  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([challengeId, userId])
-  @@map("challenge_participants")
-}
-
-model SkillTree {
-  id            String   @id @default(cuid())
-  userId        String
-  name          String   @default("Main Skill Tree")
-  description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  nodes         SkillTreeNode[]
-
-  @@unique([userId])
-  @@map("skill_trees")
-}
-
-model SkillTreeNode {
-  id            String   @id @default(cuid())
-  skillTreeId   String
-  name          String
-  description   String?
-  icon          String   @default("⚡")
-  xpValue       Int      @default(10)
-  prerequisites Json     // Array of node IDs that must be completed first
-  isUnlocked    Boolean  @default(false)
-  isCompleted   Boolean  @default(false)
-  completedAt   DateTime?
-  positionX     Int      @default(0) // For visual positioning
-  positionY     Int      @default(0)
-
-  skillTree     SkillTree @relation(fields: [skillTreeId], references: [id], onDelete: Cascade)
-
-  @@map("skill_tree_nodes")
-}
-
-// Enums
 enum AchievementCategory {
   PRODUCTIVITY
   COLLABORATION
@@ -255,3 +49,561 @@ enum ChallengeType {
   WORKSPACE
   GLOBAL
 }
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String?
+  emailVerified DateTime?
+  password      String
+  image         String?  // Added for avatar/profile image
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tasks         Task[]              @relation("UserTasks")
+  lists         List[]              @relation("UserLists")
+  labels        Label[]             @relation("UserLabels")
+  sessions      Session[]           @relation("UserSessions")
+  accounts      Account[]           @relation("UserAccounts")
+  notifications Notification[]      @relation("UserNotifications")
+  achievements  UserAchievement[]   @relation("UserAchievements")
+  rewards       UserReward[]        @relation("UserRewards")
+  socialActivities SocialActivity[] @relation("UserSocialActivities")
+  shares        UserShare[]         @relation("UserShares")
+  points        UserPoints?         @relation("UserPoints")
+  level         UserLevel?          @relation("UserLevel")
+  leaderboardEntries LeaderboardEntry[] @relation("UserLeaderboardEntries")
+  challengeParticipants ChallengeParticipant[] @relation("UserChallengeParticipants")
+  skillTrees    SkillTree[]         @relation("UserSkillTrees")
+  activityLogs  ActivityLog[]       @relation("UserActivityLogs")
+  workspaceMembers WorkspaceMember[] @relation("UserWorkspaces")
+  auditLogs     AuditLog[]          @relation("UserAuditLogs")
+  roles         UserRole[]          @relation("UserRolesUser")
+  workspaceInvitations WorkspaceInvitation[] @relation("UserWorkspaceInvitations")
+  comments      Comment[]           @relation("UserComments")
+  mentions      Mention[]           @relation("UserMentions")
+  settings      UserSetting?        @relation("UserSettings")
+  mentionedIn     Mention[]       @relation("UserMentionsTarget")
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  userId        String
+  token         String   @unique
+  expires       DateTime
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation("UserSessions", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String
+  provider      String
+  providerAccountId String
+  refresh_token String?
+  access_token  String?
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String?
+  session_state String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation("UserAccounts", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Task {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  status        TaskStatus @default(TODO)
+  priority      Priority @default(NORMAL)
+  dueDate       DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+  listId        String?
+  labels        Label[]   @relation("TaskLabels")
+  workspace     Workspace? @relation(fields: [workspaceId], references: [id])
+  workspaceId   String?
+
+  user          User     @relation("UserTasks", fields: [userId], references: [id], onDelete: Cascade)
+  list          List?    @relation("TaskList", fields: [listId], references: [id])
+  comments      Comment[] @relation("TaskComments")
+  recurringTask RecurringTask? @relation("RecurringTask")
+  template      Template?    @relation("TemplateTasks", fields: [templateId], references: [id])
+  templateId    String?
+  dependencies      TaskDependency[] @relation("TaskDependencyTask")
+  dependents        TaskDependency[] @relation("TaskDependencyDependsOn")
+  subtasks          SubTask[] @relation("SubTaskTask")
+}
+
+model List {
+  id            String   @id @default(cuid())
+  name          String
+  color         String
+  icon          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+
+  user          User     @relation("UserLists", fields: [userId], references: [id], onDelete: Cascade)
+  tasks         Task[]   @relation("TaskList")
+}
+
+model Label {
+  id            String   @id @default(cuid())
+  name          String
+  color         String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+
+  user          User     @relation("UserLabels", fields: [userId], references: [id], onDelete: Cascade)
+  tasks         Task[]   @relation("TaskLabels")
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  userId        String
+  title         String
+  message       String
+  type          String   // info | success | warning | error
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  data          Json?
+
+  user          User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  icon          String   @default("🏆")
+  category      AchievementCategory
+  points        Int      @default(10)
+  rarity        Rarity   @default(COMMON)
+  criteria      Json     // Criteria for unlocking the achievement
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userAchievements UserAchievement[]
+rewardedChallenges Challenge[] @relation("ChallengeRewardBadge")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+  progress      Int      @default(0) // Progress towards achievement (0-100)
+
+  user          User     @relation("UserAchievements", fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+}
+
+model UserReward {
+  id            String   @id @default(cuid())
+  userId        String
+  rewardId      String
+  claimedAt     DateTime?
+  isClaimed     Boolean  @default(false)
+
+  user          User     @relation("UserRewards", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, rewardId])
+}
+
+model SocialActivity {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   // task_completed, achievement_unlocked, challenge_won, streak_milestone
+  title        String
+  description  String?
+  createdAt    DateTime @default(now())
+  metadata     Json?
+
+  user         User     @relation("UserSocialActivities", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([type, createdAt])
+}
+
+model UserShare {
+  id            String   @id @default(cuid())
+  userId        String
+  type          String   // achievement_unlock, milestone, challenge_win, badge_earned
+  message       String
+  platform      String?  // twitter, linkedin, discord, facebook
+  postedAt      DateTime
+  metadata      Json?
+
+  user          User     @relation("UserShares", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postedAt])
+}
+
+model UserPoints {
+  id            String   @id @default(cuid())
+  userId        String
+  totalPoints   Int      @default(0)
+  level         Int      @default(1)
+  currentLevelXp Int     @default(0)
+  levelXpRequired Int    @default(100)
+  lastUpdated   DateTime @updatedAt
+
+  user          User     @relation("UserPoints", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model UserLevel {
+  id            String   @id @default(cuid())
+  userId        String
+  level         Int      @default(1)
+  xp            Int      @default(0)
+  xpToNextLevel Int      @default(100)
+  lastUpdated   DateTime @updatedAt
+
+  user          User     @relation("UserLevel", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+}
+
+model Leaderboard {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  type          LeaderboardType
+  period        LeaderboardPeriod
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  entries       LeaderboardEntry[]
+
+  @@index([type, period])
+}
+
+model LeaderboardEntry {
+  id            String   @id @default(cuid())
+  leaderboardId String
+  userId        String
+  rank          Int
+  score         Int
+  previousRank  Int?
+  updatedAt     DateTime @updatedAt
+
+  leaderboard   Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+  user          User        @relation("UserLeaderboardEntries", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([leaderboardId, userId])
+  @@index([rank])
+}
+
+model Challenge {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  type          ChallengeType
+  startDate     DateTime
+  endDate       DateTime
+  rewardPoints  Int      @default(50)
+  rewardBadgeId String?
+  maxParticipants Int?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  participants  ChallengeParticipant[]
+  rewardBadge   Achievement? @relation("ChallengeRewardBadge", fields: [rewardBadgeId], references: [id])
+  workspaceChallenges Workspace[] @relation("WorkspaceChallenges")
+
+  @@index([startDate, endDate])
+}
+
+model ChallengeParticipant {
+  id            String   @id @default(cuid())
+  challengeId   String
+  userId        String
+  joinedAt      DateTime @default(now())
+  progress      Int      @default(0) // Progress percentage
+  score         Int      @default(0)
+  completed     Boolean  @default(false)
+  completedAt   DateTime?
+
+  challenge     Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user          User      @relation("UserChallengeParticipants", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+}
+
+model SkillTree {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String   @default("Main Skill Tree")
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation("UserSkillTrees", fields: [userId], references: [id], onDelete: Cascade)
+  nodes         SkillTreeNode[]
+
+  @@unique([userId])
+}
+
+model SkillTreeNode {
+  id            String   @id @default(cuid())
+  skillTreeId   String
+  name          String
+  description   String?
+  icon          String   @default("⚡")
+  xpValue       Int      @default(10)
+  prerequisites Json     // Array of node IDs that must be completed first
+  isUnlocked    Boolean  @default(false)
+  isCompleted   Boolean  @default(false)
+  completedAt   DateTime?
+  positionX     Int      @default(0) // For visual positioning
+  positionY     Int      @default(0)
+
+  skillTree     SkillTree @relation(fields: [skillTreeId], references: [id], onDelete: Cascade)
+
+  @@map("skill_tree_nodes")
+}
+
+model ActivityLog {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String
+  resource      String
+  resourceId    String?
+  details       Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation("UserActivityLogs", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  members       WorkspaceMember[]
+  tasks         Task[]
+  challenges    Challenge[] @relation("WorkspaceChallenges")
+  invitations   WorkspaceInvitation[]
+}
+
+model WorkspaceMember {
+  id            String   @id @default(cuid())
+  userId        String
+  workspaceId   String
+  role          String   // owner | admin | member
+  joinedAt      DateTime @default(now())
+  lastActiveAt  DateTime?
+
+  user          User     @relation("UserWorkspaces", fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String
+  resource      String
+  resourceId    String?
+  changes       Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AdminSetting {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  value         String
+  description   String?
+  category      String   // general | security | notifications | appearance
+  isPublic      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Role {
+  id            String   @id @default(cuid())
+  name          String   @unique
+  description   String?
+  permissions   Json     // Array of permission strings
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userRoles     UserRole[] @relation("RoleUserRoles")
+}
+
+model UserRole {
+  userId        String
+  roleId        String
+
+  user              User @relation("UserRolesUser", fields: [userId], references: [id], onDelete: Cascade)
+  role              Role @relation("RoleUserRoles", fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+model SubTask {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  completed     Boolean  @default(false)
+  completedAt   DateTime?
+  taskId        String
+
+  task          Task @relation("SubTaskTask", fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model TaskDependency {
+  id            String   @id @default(cuid())
+  taskId        String
+  dependsOnId   String
+
+  task          Task @relation("TaskDependencyTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTask Task @relation("TaskDependencyDependsOn", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+}
+
+model RecurringTask {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  interval      String   // daily | weekly | monthly | yearly
+  lastRun       DateTime?
+  nextRun       DateTime
+  taskId        String   @unique
+
+  task          Task @relation("RecurringTask", fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model Template {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  category      String   // work | personal | shopping | learning
+  icon          String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tasks         Task[] @relation("TemplateTasks")
+}
+
+model WorkspaceInvitation {
+  id            String   @id @default(cuid())
+  email         String
+  workspaceId   String
+  role          String   // owner | admin | member
+  token         String   @unique
+  expires       DateTime
+  used          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  userId        String?
+
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user          User?     @relation("UserWorkspaceInvitations", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([email, workspaceId])
+}
+
+model Comment {
+  id            String   @id @default(cuid())
+  content       String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId        String
+  taskId        String?
+  parentId      String?
+
+  user          User     @relation("UserComments", fields: [userId], references: [id], onDelete: Cascade)
+  task          Task?    @relation("TaskComments", fields: [taskId], references: [id], onDelete: Cascade)
+  parent        Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       Comment[] @relation("CommentReplies")
+  mentions      Mention[] @relation("CommentMentions")
+
+  @@index([createdAt])
+  @@index([parentId])
+}
+
+model Mention {
+  id            String   @id @default(cuid())
+  userId        String
+  mentionedUserId String
+  commentId     String?
+  read          Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user              User     @relation("UserMentions", fields: [userId], references: [id], onDelete: Cascade)
+  mentionedUser     User     @relation("UserMentionsTarget", fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  comment           Comment? @relation("CommentMentions", fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([commentId])
+}
+
+model UserSetting {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+
+  user          User     @relation("UserSettings", fields: [userId], references: [id], onDelete: Cascade)
+
+  theme         String   // system | light | dark
+  language      String   // en | fr | es | de
+  timezone      String
+  dateFormat    String   // MM/DD/YYYY | DD/MM/YYYY | YYYY-MM-DD
+  timeFormat    String   // 12h | 24h
+  notifications Boolean  @default(true)
+  emailNotifications Boolean @default(true)
+  desktopNotifications Boolean @default(true)
+  soundNotifications Boolean @default(false)
+  calendarSync   Json     // Calendar sync settings
+  integrations   Json     // Integration settings
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
