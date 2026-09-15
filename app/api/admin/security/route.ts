@@ -16,10 +16,13 @@ export async function GET(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { roles: { select: { role: true } } },
     })
 
-    if (user?.role !== 'admin') {
+    const userRoles = user?.roles?.map(r => r.role) || []
+    const isAdmin = userRoles.includes('admin')
+
+    if (!isAdmin) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
