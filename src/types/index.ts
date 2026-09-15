@@ -44,7 +44,6 @@ export interface Task {
   subtasks?: SubTask[]
   dependencies?: TaskDependency[]
   dependents?: TaskDependency[]
-  assignedToId?: string | null
 }
 
 export interface SubTask {
