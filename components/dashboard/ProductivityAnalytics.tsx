@@ -23,13 +23,6 @@ export default function ProductivityAnalytics({ onClose }: { onClose: () => void
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter'>('week')
   const chartRef = useRef<HTMLCanvasElement>(null)
 
-  useEffect(() => {
-    if (tasks) {
-      const analyticsData = calculateAnalytics(tasks)
-      setAnalytics(analyticsData)
-    }
-  }, [tasks, timeRange])
-
   const calculateAnalytics = (allTasks: any[]): AnalyticsData => {
     const filteredTasks = filterTasksByTimeRange(allTasks, timeRange)
     const now = new Date()
