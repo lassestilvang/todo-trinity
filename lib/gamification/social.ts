@@ -43,7 +43,7 @@ export async function recordSocialActivity(
       type,
       title,
       description,
-      createdAt: new Date().toISOString(),
+      createdAt: new Date(),
       metadata,
     },
   })
@@ -85,10 +85,10 @@ export async function getUserSocialActivities(
   return activities.map(a => ({
     id: a.id,
     userId: a.userId,
-    type: a.type,
+    type: a.type as SocialActivity['type'],
     title: a.title,
-    description: a.description,
-    createdAt: a.createdAt,
+    description: a.description || undefined,
+    createdAt: a.createdAt.toISOString(),
     metadata: a.metadata,
   }))
 }
@@ -106,10 +106,10 @@ export async function getUserShares(userId: string, limit?: number): Promise<Use
   return shares.map(s => ({
     id: s.id,
     userId: s.userId,
-    type: s.type,
+    type: s.type as UserShare['type'],
     message: s.message,
-    postedAt: s.postedAt,
-    platform: s.platform,
+    postedAt: s.postedAt.toISOString(),
+    platform: s.platform as UserShare['platform'] | undefined,
   }))
 }
 
@@ -130,10 +130,10 @@ export async function getTrendingActivities(
   return activities.map(a => ({
     id: a.id,
     userId: a.userId,
-    type: a.type,
+    type: a.type as SocialActivity['type'],
     title: a.title,
-    description: a.description,
-    createdAt: a.createdAt,
+    description: a.description || undefined,
+    createdAt: a.createdAt.toISOString(),
     metadata: a.metadata,
   }))
 }
