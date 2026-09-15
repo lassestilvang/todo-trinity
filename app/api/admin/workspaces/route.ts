@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
-// GET /api/admin/workspaces - Get all workspaces (admin only)
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -48,7 +47,7 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             tasks: true,
-            lists: true,
+            members: true,
             invitations: true,
           }
         }
