@@ -18,10 +18,10 @@ export async function GET(request: NextRequest) {
     // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { workspaces: true }
+      include: { workspaceMembers: true }
     })
 
-    const isAdmin = user?.workspaces?.some(member =>
+    const isAdmin = user?.workspaceMembers?.some(member =>
       member.role === 'ADMIN' || member.role === 'OWNER'
     )
 
