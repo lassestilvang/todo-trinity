@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { api } from '@/lib/api-client'
 import { useToast } from '@/src/hooks/useToast'
+import Image from 'next/image'
 
 interface Comment {
   id: string
@@ -30,11 +31,7 @@ export default function CommentThread({ taskId, onClose }: { taskId: string; onC
 
   const { addToast } = useToast()
 
-  useEffect(() => {
-    fetchComments()
-  }, [taskId])
-
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     setLoading(true)
     try {
       const data = await api.getComments(taskId)
@@ -45,7 +42,11 @@ export default function CommentThread({ taskId, onClose }: { taskId: string; onC
     } finally {
       setLoading(false)
     }
-  }
+  }, [taskId, addToast])
+
+  useEffect(() => {
+    fetchComments()
+  }, [fetchComments])
 
   const submitComment = async () => {
     if (!newComment.trim()) return
@@ -95,9 +96,15 @@ export default function CommentThread({ taskId, onClose }: { taskId: string; onC
       `}
     >
       <div className="flex items-start space-x-3">
-        <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 flex items-center justify-center overflow-hidden">
           {comment.user?.image ? (
-            <img src={comment.user.image} alt={comment.user.name} className="w-full h-full rounded-full" />
+            <Image
+              src={comment.user.image}
+              alt={comment.user.name}
+              width={32}
+              height={32}
+              className="rounded-full object-cover"
+            />
           ) : (
             <span className="text-sm font-medium text-gray-600">
               {comment.user?.name?.charAt(0) || '?'}
