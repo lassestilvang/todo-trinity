@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import webpush from 'web-push'
+import { Prisma } from '@prisma/client'
 
 // Configure web-push with VAPID keys
 if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
@@ -46,17 +47,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Store subscription in database
-    await prisma.userSetting.upsert({
-      where: {
-        userId_key: { userId, key: 'push-subscription' }
+    const userSetting = await prisma.userSetting.upsert({
+      where: { userId },
+      update: {
+        integrations: {
+          pushSubscription: JSON.stringify(subscription)
+        }
       },
       create: {
         userId,
-        key: 'push-subscription',
-        value: JSON.stringify(subscription)
-      },
-      update: {
-        value: JSON.stringify(subscription)
+        theme: 'system',
+        language: 'en',
+        timezone: 'UTC',
+        dateFormat: 'MM/DD/YYYY',
+        timeFormat: '12h',
+        notifications: true,
+        emailNotifications: true,
+        desktopNotifications: true,
+        soundNotifications: false,
+        integrations: {
+          pushSubscription: JSON.stringify(subscription)
+        },
+        calendarSync: Prisma.JsonNull,
       }
     })
 
@@ -84,9 +96,10 @@ export async function DELETE(request: NextRequest) {
     const userId = session.user.id
 
     // Delete subscription from database
-    await prisma.userSetting.delete({
-      where: {
-        userId_key: { userId, key: 'push-subscription' }
+    const userSetting = await prisma.userSetting.update({
+      where: { userId },
+      data: {
+        integrations: {}
       }
     })
 
