@@ -65,10 +65,12 @@ export class ChallengeEngine {
       endDate: c.endDate.toISOString(),
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
+      rewardBadgeId: c.rewardBadgeId || undefined,
+      maxParticipants: c.maxParticipants || undefined,
       participants: c.participants.map(p => ({
         ...p,
         joinedAt: p.joinedAt.toISOString(),
-        completedAt: p.completedAt?.toISOString() || undefined,
+        completedAt: p.completedAt?.toISOString(),
       }))
     }))
   }
@@ -95,7 +97,9 @@ export class ChallengeEngine {
     }
 
     const now = new Date()
-    if (challenge.startDate > now || challenge.endDate < now) {
+    const startDate = new Date(challenge.startDate)
+    const endDate = new Date(challenge.endDate)
+    if (startDate > now || endDate < now) {
       return {
         success: false,
         participant: null,
@@ -169,7 +173,15 @@ export class ChallengeEngine {
 
     // Different challenge types award points differently
     if (taskCompleted) {
-      const pointValue = this.calculatePointValue(challenge)
+      const pointValue = this.calculatePointValue({
+        ...challenge,
+        startDate: new Date(challenge.startDate).toISOString(),
+        endDate: new Date(challenge.endDate).toISOString(),
+        createdAt: new Date(challenge.createdAt).toISOString(),
+        updatedAt: new Date(challenge.updatedAt).toISOString(),
+        rewardBadgeId: challenge.rewardBadgeId || undefined,
+        maxParticipants: challenge.maxParticipants || undefined,
+      })
       await prisma.challengeParticipant.update({
         where: {
           challengeId_userId: {
@@ -192,11 +204,9 @@ export class ChallengeEngine {
    * Calculate points for a completed task within a challenge
    */
   private static calculatePointValue(challenge: Challenge): number {
-    // Base points + bonus for challenge duration
-    const durationDays = Math.ceil(
-      (new Date(challenge.endDate).getTime() - new Date(challenge.startDate).getTime()) /
-        (1000 * 60 * 60 * 24)
-    )
+    const end = new Date(challenge.endDate)
+    const start = new Date(challenge.startDate)
+    const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
     const durationBonus = Math.max(0, Math.floor((30 - durationDays) / 2))
     return challenge.rewardPoints + durationBonus
   }
@@ -216,7 +226,8 @@ export class ChallengeEngine {
     if (!challenge) return
 
     // Challenge is complete if current time exceeds end date
-    if (now >= new Date(challenge.endDate)) {
+    const endDate = new Date(challenge.endDate)
+    if (now >= endDate) {
       for (const participant of challenge.participants) {
         if (!participant.completed) {
           await prisma.challengeParticipant.update({
@@ -251,7 +262,7 @@ export class ChallengeEngine {
       progress: p.progress,
       score: p.score,
       completed: p.completed,
-      completedAt: p.completedAt?.toISOString() || undefined,
+      completedAt: p.completedAt?.toISOString(),
     }))
   }
 
@@ -270,9 +281,13 @@ export class ChallengeEngine {
               orderBy: { score: 'desc' },
               select: {
                 id: true,
+                challengeId: true,
                 userId: true,
-                score: true,
+                joinedAt: true,
                 progress: true,
+                score: true,
+                completed: true,
+                completedAt: true,
               },
             },
           },
@@ -280,22 +295,28 @@ export class ChallengeEngine {
       },
     })
 
-    return participations.map(p => ({
-      ...p.challenge,
-      startDate: p.challenge.startDate.toISOString(),
-      endDate: p.challenge.endDate.toISOString(),
-      createdAt: p.challenge.createdAt.toISOString(),
-      updatedAt: p.challenge.updatedAt.toISOString(),
-      participants: p.challenge.participants.map(part => ({
-        id: part.id,
-        challengeId: p.challengeId,
-        userId: part.userId,
-        joinedAt: '',
-        progress: part.progress,
-        score: part.score,
-        completed: false,
-      })),
-    }))
+    return participations.map(p => {
+      const challenge = p.challenge
+      return {
+        ...challenge,
+        startDate: challenge.startDate.toISOString(),
+        endDate: challenge.endDate.toISOString(),
+        createdAt: challenge.createdAt.toISOString(),
+        updatedAt: challenge.updatedAt.toISOString(),
+        rewardBadgeId: challenge.rewardBadgeId || undefined,
+        maxParticipants: challenge.maxParticipants || undefined,
+        participants: challenge.participants.map(part => ({
+          id: part.id,
+          challengeId: p.challengeId,
+          userId: part.userId,
+          joinedAt: part.joinedAt.toISOString(),
+          progress: part.progress,
+          score: part.score,
+          completed: part.completed,
+          completedAt: part.completedAt?.toISOString(),
+        })),
+      }
+    })
   }
 
   /**
