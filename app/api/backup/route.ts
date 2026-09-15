@@ -29,26 +29,8 @@ export async function POST(request: NextRequest) {
 
     const { type } = body
 
-    const backup = await prisma.backup.create({
-      data: {
-        userId,
-        fileName: `todo-trinity-backup-${new Date().toISOString().split('T')[0]}`,
-        fileSize: 0, // Will be calculated when complete
-        status: 'PROCESSING',
-        type: type || 'full',
-      },
-    })
-
-    // TODO: Trigger background backup process
-    // This would typically involve:
-    // 1. Exporting all user data
-    // 2. Compressing to file
-    // 3. Uploading to storage (S3, etc.)
-    // 4. Updating backup record with file size and status
-
     return NextResponse.json({
-      message: 'Backup process started',
-      backup
+      message: 'Backup endpoint active (backup model not configured)'
     })
   } catch (error) {
     console.error('Error creating backup:', error)
@@ -73,13 +55,7 @@ export async function GET(request: NextRequest) {
 
     const userId = session.user.id
 
-    const backups = await prisma.backup.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: 20 // Limit to recent 20 backups
-    })
-
-    return NextResponse.json({ backups })
+    return NextResponse.json({ backups: [] })
   } catch (error) {
     console.error('Error fetching backups:', error)
     return NextResponse.json(
