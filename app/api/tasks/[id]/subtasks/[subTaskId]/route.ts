@@ -25,7 +25,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       where: {
         id: subTaskId,
         taskId: id,
-        userId: session.user.id
       }
     })
 
@@ -75,7 +74,6 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
       where: {
         id: subTaskId,
         taskId: id,
-        userId: session.user.id
       }
     })
 
