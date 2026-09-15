@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useGamification } from '@/hooks/useTasks'
-import { Button } from '@/components/ui/button'
+import { useGamification } from '@/src/hooks/useTasks'
+import Button from '@/components/ui/button'
 import { useRouter } from 'next/router'
 
 interface Achievement {
@@ -21,14 +21,29 @@ interface UserPoints {
   levelXpRequired: number
 }
 
-export default function GamificationPanel() {
-  const { streak, points, achievements, level, isLoading } = useGamification()
+export default function GamificationPanel({ onClose }: { onClose?: () => void }) {
+  const gamification = useGamification('')
+  const { streak, points, achievements, level } = gamification.gamification || {}
+  const isLoading = gamification.loading
   const [panelOpen, setPanelOpen] = useState<string | null>(null) // 'achievements' | 'leaderboard' | 'challenges' | 'rewards'
   const router = useRouter()
 
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-md p-4 mb-4">
+        <div className="flex items-center justify-between mb-4">
+          {onClose && (
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+            >
+              ← Back
+            </Button>
+          )}
+          <h3 className="font-medium text-gray-900">Gamification Hub</h3>
+          <div></div> {/* Spacer */}
+        </div>
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           <span className="ml-2">Loading gamification data...</span>
@@ -68,15 +83,15 @@ export default function GamificationPanel() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-blue-600">{streak.currentStreak}</div>
+            <div className="text-2xl font-bold text-blue-600">{streak?.currentStreak || 0}</div>
             <div className="text-sm text-gray-500">Current Streak</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-green-600">{streak.longestStreak}</div>
+            <div className="text-2xl font-bold text-green-600">{streak?.longestStreak || 0}</div>
             <div className="text-sm text-gray-500">Longest Streak</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-2xl font-bold text-purple-600">{level}</div>
+            <div className="text-2xl font-bold text-purple-600">{level || 1}</div>
             <div className="text-sm text-gray-500">Level</div>
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
@@ -90,11 +105,11 @@ export default function GamificationPanel() {
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
               className="bg-blue-500 h-2.5 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, streak.dailyGoalProgress / streak.dailyGoal * 100)}%` }}
+              style={{ width: `${Math.min(100, (streak?.dailyGoalProgress || 0) / (streak?.dailyGoal || 1) * 100)}%` }}
             ></div>
           </div>
           <div className="flex justify-between text-sm text-gray-500 mt-1">
-            <span>{streak.dailyGoalProgress}/{streak.dailyGoal} Tasks</span>
+            <span>{streak?.dailyGoalProgress || 0}/{streak?.dailyGoal || 0} Tasks</span>
           </div>
         </div>
 
@@ -102,7 +117,7 @@ export default function GamificationPanel() {
         <div className="mt-4">
           <h4 className="font-medium text-gray-900 mb-2">Earned Badges</h4>
           <div className="flex flex-wrap gap-2">
-            {streak.badges.map((badge: string, index: number) => {
+            {streak?.badges?.map((badge: string, index: number) => {
               let icon = '🏆'
               let color = 'gray'
               if (badge.includes('Getting Started')) {
@@ -131,7 +146,7 @@ export default function GamificationPanel() {
                   {icon} {badge}
                 </span>
               )
-            })}
+            }) || []}
           </div>
         </div>
 
@@ -141,11 +156,11 @@ export default function GamificationPanel() {
           <div className="w-full bg-gray-200 rounded-full h-2.5">
             <div
               className="bg-green-500 h-2.5 rounded-full transition-all duration-500"
-              style={{ width: `${(level.currentLevelXp / level.levelXpRequired) * 100}%` }}
+              style={{ width: `${level && level.levelXpRequired ? ((level.currentLevelXp || 0) / level.levelXpRequired) * 100 : 0}%` }}
             ></div>
           </div>
           <div className="flex justify-between text-sm text-gray-500 mt-1">
-            <span>{level.currentLevelXp}/{level.levelXpRequired} XP</span>
+            <span>{level?.currentLevelXp || 0}/{level?.levelXpRequired || 0} XP</span>
           </div>
         </div>
       </div>
@@ -164,7 +179,7 @@ export default function GamificationPanel() {
             <h3 className="font-medium text-gray-900">Achievements</h3>
           </div>
           <div className="space-y-2">
-            {achievements.map((achievement: Achievement) => (
+            {achievements?.map((achievement: Achievement) => (
               <div
                 key={achievement.id}
                 className={`flex items-center space-x-3 p-3 border rounded-lg ${
@@ -183,7 +198,7 @@ export default function GamificationPanel() {
                     <span className="text-xs font-medium">
                       {achievement.points} pts
                     </span>
-                    <span className="px-2 py-0.5 text-xs rounded-full ${
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${
                       achievement.rarity === 'COMMON'
                         ? 'bg-gray-200 text-gray-800'
                         : achievement.rarity === 'UNCOMMON'
@@ -193,7 +208,7 @@ export default function GamificationPanel() {
                         : achievement.rarity === 'EPIC'
                         ? 'bg-red-200 text-red-800'
                         : 'bg-yellow-200 text-yellow-800'
-                    }">
+                    }`}>
                       {achievement.rarity}
                     </span>
                   </div>
@@ -205,14 +220,14 @@ export default function GamificationPanel() {
                     <Button
                       onClick={() => alert('Claim achievement feature coming soon!')}
                       variant="outline"
-                      size="xs"
+                      size="sm"
                     >
                       Claim
                     </Button>
                   )}
                 </div>
               </div>
-            ))}
+            )) || []}
           </div>
         </div>
       )}
