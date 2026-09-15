@@ -93,6 +93,7 @@ model User {
   mentions      Mention[]           @relation("UserMentions")
   settings      UserSetting?        @relation("UserSettings")
   mentionedIn     Mention[]       @relation("UserMentionsTarget")
+  views         View[]          @relation("UserViews")
 }
 
 model Session {
@@ -605,5 +606,18 @@ model UserSetting {
   integrations   Json     // Integration settings
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model View {
+  id        String   @id @default(cuid())
+  name      String
+  filters   Json     @default("{}")
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation("UserViews", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
