@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@/src/contexts'
 import { PriorityInsight } from '@/lib/ai/types'
 import { AlertTriangle, TrendingUp, Clock, Target, X } from 'lucide-react'
@@ -27,13 +27,7 @@ export default function AIPrioritySuggestions() {
   const [error, setError] = useState<string | null>(null)
   const [expandedTask, setExpandedTask] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchPrioritySuggestions()
-    }
-  }, [user?.id])
-
-  const fetchPrioritySuggestions = async () => {
+  const fetchPrioritySuggestions = useCallback(async () => {
     if (!user?.id) return
 
     setLoading(true)
@@ -50,7 +44,13 @@ export default function AIPrioritySuggestions() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchPrioritySuggestions()
+    }
+  }, [user?.id])
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -184,7 +184,7 @@ export default function AIPrioritySuggestions() {
                       <span className={`px-2 py-1 text-xs rounded border font-medium ${getPriorityColor(insight.suggestedPriority)}`}>{
                         insight.suggestedPriority
                       }</span>
-                      <span className={`text-sm ml-2 ${getConfidenceColor(insight.confidence)}`}>
+                      <span className="text-sm ml-2 ${getConfidenceColor(insight.confidence)}">
                         {insight.confidence}% confidence
                       </span>
                     </div>
@@ -196,47 +196,17 @@ export default function AIPrioritySuggestions() {
                     )}
                   </div>
                 </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setExpandedTask(isExpanded ? null : insight.taskId)
-                  }}
-                  className="text-gray-400 hover:text-gray-600 ml-2"
-                >
-                  {isExpanded ? '−' : '+'}
-                </button>
               </div>
 
-              {isExpanded && (
-                <div className="mt-4 pt-4 border-t space-y-3">
-                  <div>
-                    <h5 className="text-sm font-medium text-gray-700 mb-1">Reasoning:</h5>
-                    <p className="text-sm text-gray-600">{insight.reasoning}</p>
-                  </div>
-
-                  {insight.alternatives.length > 0 && (
-                    <div>
-                      <h5 className="text-sm font-medium text-gray-700 mb-1">Alternative Priorities:</h5>
-                      <div className="flex space-x-2">
-                        {insight.alternatives.map(alt => (
-                          <span
-                            key={alt}
-                            className={`px-2 py-1 text-xs rounded border ${getPriorityColor(alt)}`}
-                          >
-                            {alt}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>Task ID: {insight.taskId}</span>
-                    <span>Confidence: {insight.confidence}%</span>
-                  </div>
-                </div>
-              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setExpandedTask(isExpanded ? null : insight.taskId)
+                }}
+                className="text-gray-400 hover:text-gray-600 ml-2"
+              >
+                {isExpanded ? '−' : '+'}
+              </button>
             </div>
           )
         })}
