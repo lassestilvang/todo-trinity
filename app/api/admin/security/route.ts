@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       select: { roles: { select: { role: true } } },
     })
 
-    const userRoles = user?.roles?.map(r => r.role) || []
+    const userRoles = user?.roles?.map(r => r.role?.name) || []
     const isAdmin = userRoles.includes('admin')
 
     if (!isAdmin) {
@@ -68,10 +68,13 @@ export async function PUT(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true },
+      select: { roles: { select: { role: true } } },
     })
 
-    if (user?.role !== 'admin') {
+    const userRoles = user?.roles?.map(r => r.role?.name) || []
+    const isAdmin = userRoles.includes('admin')
+
+    if (!isAdmin) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -99,7 +102,7 @@ export async function PUT(request: NextRequest) {
     const updatePromises = settingsToUpdate.map(
       ({ category, key, value }) =>
         prisma.adminSetting.upsert({
-          where: { category, key },
+          where: { key },
           update: { value },
           create: { category, key, value: value as any },
         })
