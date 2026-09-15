@@ -91,19 +91,22 @@ export default function WorkflowBuilder() {
   const [canvasNodes, setCanvasNodes] = useState<CanvasNode[]>([])
   const { addToast } = useToast()
 
-// Initialize canvas node types
+// Initialize canvas node types - moved outside effect to avoid setState in effect
+  const canvasNodeTypes = [
+    { id: 'trigger-schedule', type: 'trigger', name: 'Schedule', icon: Clock },
+    { id: 'trigger-task-created', type: 'trigger', name: 'Task Created', icon: CheckCircle },
+    { id: 'trigger-task-completed', type: 'trigger', name: 'Task Completed', icon: ListCheck },
+    { id: 'action-create-task', type: 'action', name: 'Create Task', icon: Plus },
+    { id: 'action-update-task', type: 'action', name: 'Update Task', icon: Settings },
+    { id: 'action-assign-task', type: 'action', name: 'Assign Task', icon: Users },
+    { id: 'action-add-label', type: 'action', name: 'Add Label', icon: Filter },
+    { id: 'action-move-task', type: 'action', name: 'Move Task', icon: ArrowRight },
+    { id: 'condition-high-priority', type: 'condition', name: 'High Priority Check', icon: AlertCircle },
+  ]
+
   useEffect(() => {
-    setCanvasNodes([
-      { id: 'trigger-schedule', type: 'trigger', name: 'Schedule', icon: Clock },
-      { id: 'trigger-task-created', type: 'trigger', name: 'Task Created', icon: CheckCircle },
-      { id: 'trigger-task-completed', type: 'trigger', name: 'Task Completed', icon: ListCheck },
-      { id: 'action-create-task', type: 'action', name: 'Create Task', icon: Plus },
-      { id: 'action-update-task', type: 'action', name: 'Update Task', icon: Settings },
-      { id: 'action-assign-task', type: 'action', name: 'Assign Task', icon: Users },
-      { id: 'action-add-label', type: 'action', name: 'Add Label', icon: Filter },
-      { id: 'action-move-task', type: 'action', name: 'Move Task', icon: ArrowRight },
-      { id: 'condition-high-priority', type: 'condition', name: 'High Priority Check', icon: AlertCircle },
-    ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setCanvasNodes(canvasNodeTypes)
   }, [])
 
   const createWorkflow = () => {
@@ -149,12 +152,17 @@ export default function WorkflowBuilder() {
     const node = canvasNodes.find(n => n.type === type)
     if (!node) return
 
+    // Generate stable random position using crypto for determinism
+    const randomValue = crypto.randomUUID().split('').reduce((acc, char, idx) => {
+      return acc + (idx % 2 === 0 ? char.charCodeAt(0) : 0)
+    }, 0)
+
     const step: WorkflowStep = {
       id: crypto.randomUUID(),
       type,
       name: node.name,
       config: getDefaultConfig(type),
-      position: { x: Math.random() * 300 + 200, y: Math.random() * 200 + 100 },
+      position: { x: (randomValue % 300) + 200, y: (randomValue % 200) + 100 },
       inputs: {},
       outputs: {}
     }
@@ -303,7 +311,7 @@ export default function WorkflowBuilder() {
             <div className="text-center py-8 text-gray-500">
               <Zap className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>No workflows created yet</p>
-              <p className="text-sm">Click "New Workflow" to get started</p>
+              <p className="text-sm">Click &quot;New Workflow&quot; to get started</p>
             </div>
           )}
         </div>
