@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         desktopNotifications: true,
         soundNotifications: false,
         integrations: {},
-        calendarSync: null,
+        calendarSync: Prisma.JsonNull,
       },
     })
 
