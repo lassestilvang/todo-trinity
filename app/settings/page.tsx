@@ -1,12 +1,18 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSettings } from '@/src/hooks/useTasks'
 import { useToast } from '@/src/hooks/useToast'
 
 export default function SettingsPage({ onClose }: { onClose: () => void }) {
   const { settings, loading, error, updateSettings } = useSettings()
   const { addToast } = useToast()
+  const [localSettings, setLocalSettings] = useState<typeof settings>(settings)
+
+  // Sync local settings when settings change
+  useEffect(() => {
+    setLocalSettings(settings)
+  }, [settings])
 
   if (loading) {
     return (
@@ -32,9 +38,16 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    updateSettings(settings)
+    updateSettings(localSettings)
     addToast('Settings updated successfully', 'success')
     onClose()
+  }
+
+  const handleSettingChange = (key: keyof typeof localSettings, value: any) => {
+    setLocalSettings((prev: typeof localSettings) => {
+      const updated = { ...prev, [key]: value }
+      return updated
+    })
   }
 
   return (
@@ -54,8 +67,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               Theme
             </label>
             <select
-              value={settings.theme}
-              onChange={(e) => settings.theme = e.target.value}
+              value={localSettings.theme}
+              onChange={(e) => handleSettingChange('theme', e.target.value)}
               className="mt-1 px-3 py-2 border rounded"
             >
               <option value="system">System Default</option>
@@ -70,8 +83,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               Language
             </label>
             <select
-              value={settings.language}
-              onChange={(e) => settings.language = e.target.value}
+              value={localSettings.language}
+              onChange={(e) => handleSettingChange('language', e.target.value)}
               className="mt-1 px-3 py-2 border rounded"
             >
               <option value="en">English</option>
@@ -89,12 +102,12 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             <div className="grid grid-cols-2 gap-2 mb-4">
               {['google-calendar', 'outlook-calendar', 'github', 'slack', 'notion', 'zapier'].map((integration) => {
                 const configMap: Record<string, { name: string; enabled: boolean }> = {
-                  'google-calendar': { name: 'Google Calendar', enabled: settings.calendarSync?.google || false },
-                  'outlook-calendar': { name: 'Outlook Calendar', enabled: settings.calendarSync?.microsoft || false },
-                  'github': { name: 'GitHub', enabled: settings.integrations?.github || false },
-                  'slack': { name: 'Slack', enabled: settings.integrations?.slack || false },
+                  'google-calendar': { name: 'Google Calendar', enabled: localSettings.calendarSync?.google || false },
+                  'outlook-calendar': { name: 'Outlook Calendar', enabled: localSettings.calendarSync?.microsoft || false },
+                  'github': { name: 'GitHub', enabled: localSettings.integrations?.github || false },
+                  'slack': { name: 'Slack', enabled: localSettings.integrations?.slack || false },
                   'notion': { name: 'Notion', enabled: false },
-                  'zapier': { name: 'Zapier', enabled: settings.integrations?.zapier || false },
+                  'zapier': { name: 'Zapier', enabled: localSettings.integrations?.zapier || false },
                 }
 
                 const config = configMap[integration] || { name: integration, enabled: false }
@@ -122,8 +135,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <label className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
                 <input
                   type="checkbox"
-                  checked={settings.notifications}
-                  onChange={(e) => settings.notifications = e.target.checked}
+                  checked={localSettings.notifications}
+                  onChange={(e) => handleSettingChange('notifications', e.target.checked)}
                   className="rounded"
                 />
                 <span className="text-gray-600">Desktop</span>
@@ -131,8 +144,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <label className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
                 <input
                   type="checkbox"
-                  checked={settings.emailNotifications}
-                  onChange={(e) => settings.emailNotifications = e.target.checked}
+                  checked={localSettings.emailNotifications}
+                  onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
                   className="rounded"
                 />
                 <span className="text-gray-600">Email</span>
@@ -140,8 +153,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               <label className="flex items-center space-x-2 px-3 py-2 rounded bg-gray-100">
                 <input
                   type="checkbox"
-                  checked={settings.desktopNotifications}
-                  onChange={(e) => settings.desktopNotifications = e.target.checked}
+                  checked={localSettings.desktopNotifications}
+                  onChange={(e) => handleSettingChange('desktopNotifications', e.target.checked)}
                   className="rounded"
                 />
                 <span className="text-gray-600">Push</span>
@@ -156,11 +169,7 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[1, 3, 5, 7, 10].map((goal) => (
-                <label key={goal} className="flex flex-col items-center rounded bg-gray-100 p-2 cursor-pointer ${
-                  settings.dailyGoal === goal
-                    ? 'bg-blue-500 text-white'
-                    : ''
-                }">
+                <label key={goal} className={`flex flex-col items-center rounded bg-gray-100 p-2 cursor-pointer ${localSettings.dailyGoal === goal ? 'bg-blue-500 text-white' : ''}`}>
                   <span className="font-bold text-lg">{goal}</span>
                   <span className="text-xs text-gray-500">tasks/day</span>
                 </label>
@@ -175,8 +184,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
             </label>
             <input
               type="time"
-              value={settings.reminderTime}
-              onChange={(e) => settings.reminderTime = e.target.value}
+              value={localSettings.reminderTime}
+              onChange={(e) => handleSettingChange('reminderTime', e.target.value)}
               className="mt-1 block w-full px-3 py-2 border rounded"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -190,8 +199,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               Keyboard Shortcuts
             </label>
             <select
-              value={settings.keyboardShortcuts}
-              onChange={(e) => settings.keyboardShortcuts = e.target.value}
+              value={localSettings.keyboardShortcuts}
+              onChange={(e) => handleSettingChange('keyboardShortcuts', e.target.value)}
               className="mt-1 px-3 py-2 border rounded"
             >
               <option value="true">Enabled</option>
@@ -205,8 +214,8 @@ export default function SettingsPage({ onClose }: { onClose: () => void }) {
               Animations
             </label>
             <select
-              value={settings.animationsEnabled}
-              onChange={(e) => settings.animationsEnabled = e.target.value}
+              value={localSettings.animationsEnabled}
+              onChange={(e) => handleSettingChange('animationsEnabled', e.target.value)}
               className="mt-1 px-3 py-2 border rounded"
             >
               <option value="true">Enabled</option>
