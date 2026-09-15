@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { id: 'desc' },
     })
 
     return NextResponse.json({ recurringTasks })
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
       data: {
         title: validatedData.title,
         description: validatedData.description,
-        schedule: validatedData.schedule,
-        isActive: validatedData.isActive,
+        interval: validatedData.schedule,
+        nextRun: new Date(),
         task: { connect: { id: validatedData.taskId } },
       },
       include: {
@@ -176,8 +176,7 @@ export async function PUT(request: NextRequest) {
       data: {
         title: title || undefined,
         description: description || undefined,
-        schedule: schedule || undefined,
-        isActive: isActive !== undefined ? isActive : undefined,
+        interval: schedule || undefined,
       },
       include: {
         task: {
