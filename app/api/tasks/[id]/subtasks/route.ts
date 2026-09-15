@@ -22,7 +22,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       where: {
         taskId: id,
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: { id: 'asc' }
     })
 
     return NextResponse.json({ subtasks })
@@ -77,7 +77,6 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       data: {
         title,
         taskId: id,
-        userId: session.user.id
       }
     })
 
