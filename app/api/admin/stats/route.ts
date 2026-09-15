@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
-// GET /api/admin/stats - Get admin statistics
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -45,7 +44,7 @@ export async function GET(request: NextRequest) {
           select: { userId: true },
           distinct: ['userId'],
         }),
-        prisma.workspaceInvitation.count({ where: { accepted: false } })
+        prisma.workspaceInvitation.count({ where: { used: false } })
       ])
 
     const activeUserIds = (activeUsers as any[]).map((a: any) => a.userId)
