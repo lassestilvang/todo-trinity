@@ -14,7 +14,7 @@ export interface UserReward {
   id: string
   userId: string
   rewardId: string
-  claimedAt: string | null
+  claimedAt: Date | null
   isClaimed: boolean
 }
 
@@ -147,10 +147,15 @@ export async function claimReward(userId: string, rewardId: string): Promise<{ s
  * Get user's claimed rewards
  */
 export async function getUserRewards(userId: string): Promise<UserReward[]> {
-  return prisma.userReward.findMany({
+  const rewards = await prisma.userReward.findMany({
     where: { userId },
     orderBy: { claimedAt: 'desc' },
   })
+
+  return rewards.map(reward => ({
+    ...reward,
+    claimedAt: reward.claimedAt ? new Date(reward.claimedAt) : null,
+  }))
 }
 
 /**
