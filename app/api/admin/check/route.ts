@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       include: {
-        workspaces: {
+        workspaceMembers: {
           include: {
             workspace: {
               select: { id: true, name: true }
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    const isAdmin = user?.workspaces?.some(member =>
+    const isAdmin = user?.workspaceMembers?.some(member =>
       member.role === 'ADMIN' || member.role === 'OWNER'
     )
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         email: session.user.email,
         name: session.user.name,
       },
-      workspaceRoles: user?.workspaces.map(w => ({ id: w.workspace.id, name: w.workspace.name, role: w.role })) || []
+      workspaceRoles: user?.workspaceMembers.map(w => ({ id: w.workspace.id, name: w.workspace.name, role: w.role })) || []
     })
   } catch (error) {
     console.error('Error checking admin status:', error)
