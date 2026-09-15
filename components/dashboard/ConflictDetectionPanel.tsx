@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Conflict, ConflictResolution } from '@/lib/ai/conflict-detection'
 import { useUser } from '@/src/contexts'
 import { AlertTriangle, AlertCircle, Zap, Shield, Layout, Palette, Plus } from 'lucide-react'
@@ -19,6 +19,59 @@ interface ConflictAnalysisResponse {
   timeBlocks: any[]
 }
 
+const getSeverityColor = (severity: string) => {
+  switch (severity) {
+    case 'critical': return 'bg-red-100 border-red-500 text-red-800'
+    case 'high': return 'bg-orange-100 border-orange-500 text-orange-800'
+    case 'medium': return 'bg-yellow-100 border-yellow-500 text-yellow-800'
+    case 'low': return 'bg-blue-100 border-blue-500 text-blue-800'
+    default: return 'bg-gray-100 border-gray-500 text-gray-800'
+  }
+}
+
+const getSeverityLabel = (severity: string) => {
+  switch (severity) {
+    case 'critical': return 'Critical'
+    case 'high': return 'High'
+    case 'medium': return 'Medium'
+    case 'low': return 'Low'
+    default: return 'Low'
+  }
+}
+
+const getConflictTypeIcon = (type: string) => {
+  switch (type) {
+    case 'time_overlap': return AlertCircle
+    case 'deadline_conflict': return Zap
+    case 'dependency_conflict': return Shield
+    case 'workload_conflict': return Layout
+    case 'resource_conflict': return Palette
+    default: return AlertTriangle
+  }
+}
+
+const getTypeLabel = (type: string) => {
+  switch (type) {
+    case 'time_overlap': return 'Time Overlap'
+    case 'deadline_conflict': return 'Deadline Conflict'
+    case 'dependency_conflict': return 'Dependency Conflict'
+    case 'workload_conflict': return 'Workload Conflict'
+    case 'resource_conflict': return 'Resource Conflict'
+    default: return 'Conflict'
+  }
+}
+
+const getTypeIcon = (type: string) => {
+  const icons: Record<string, React.ElementType> = {
+    time_overlap: AlertCircle,
+    deadline_conflict: Zap,
+    dependency_conflict: Shield,
+    workload_conflict: Layout,
+    resource_conflict: Palette
+  }
+  return icons[type] || AlertTriangle
+}
+
 export default function ConflictDetectionPanel() {
   const { user } = useUser()
   const [analysis, setAnalysis] = useState<ConflictAnalysisResponse | null>(null)
@@ -26,13 +79,7 @@ export default function ConflictDetectionPanel() {
   const [error, setError] = useState<string | null>(null)
   const [expandedConflict, setExpandedConflict] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchConflictAnalysis()
-    }
-  }, [user?.id])
-
-  const fetchConflictAnalysis = async () => {
+  const fetchConflictAnalysis = useCallback(async () => {
     if (!user?.id) return
 
     setLoading(true)
@@ -48,60 +95,13 @@ export default function ConflictDetectionPanel() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [user?.id])
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'bg-red-100 border-red-500 text-red-800'
-      case 'high': return 'bg-orange-100 border-orange-500 text-orange-800'
-      case 'medium': return 'bg-yellow-100 border-yellow-500 text-yellow-800'
-      case 'low': return 'bg-blue-100 border-blue-500 text-blue-800'
-      default: return 'bg-gray-100 border-gray-500 text-gray-800'
+  useEffect(() => {
+    if (user?.id) {
+      fetchConflictAnalysis()
     }
-  }
-
-  const getSeverityLabel = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'Critical'
-      case 'high': return 'High'
-      case 'medium': return 'Medium'
-      case 'low': return 'Low'
-      default: return 'Low'
-    }
-  }
-
-  const getConflictTypeIcon = (type: string) => {
-    switch (type) {
-      case 'time_overlap': return AlertCircle
-      case 'deadline_conflict': return Zap
-      case 'dependency_conflict': return Shield
-      case 'workload_conflict': return Layout
-      case 'resource_conflict': return Palette
-      default: return AlertTriangle
-    }
-  }
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'time_overlap': return 'Time Overlap'
-      case 'deadline_conflict': return 'Deadline Conflict'
-      case 'dependency_conflict': return 'Dependency Conflict'
-      case 'workload_conflict': return 'Workload Conflict'
-      case 'resource_conflict': return 'Resource Conflict'
-      default: return 'Conflict'
-    }
-  }
-
-  const getTypeIcon = (type: string) => {
-    const icons: Record<string, React.ElementType> = {
-      time_overlap: AlertCircle,
-      deadline_conflict: Zap,
-      dependency_conflict: Shield,
-      workload_conflict: Layout,
-      resource_conflict: Palette
-    }
-    return icons[type] || AlertTriangle
-  }
+  }, [user?.id])
 
   if (loading) {
     return (
