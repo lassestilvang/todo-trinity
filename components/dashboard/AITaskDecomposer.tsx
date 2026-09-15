@@ -209,7 +209,7 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
                     rows={4}
                   />
                   <p className="text-xs text-gray-500">
-                    Examples: "Write a blog post about React hooks", "Prepare Q3 budget presentation", "Set up new employee onboarding"
+                    Examples: &quot;Write a blog post about React hooks&quot;, &quot;Prepare Q3 budget presentation&quot;, &quot;Set up new employee onboarding&quot;
                   </p>
                 </div>
               </div>
