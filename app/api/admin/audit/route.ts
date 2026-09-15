@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       select: { roles: { select: { role: true } } },
     })
 
-    const userRoles = user?.roles?.map(r => r.role) || []
+    const userRoles = user?.roles?.map(r => r.role?.name) || []
     const isAdmin = userRoles.includes('admin')
     const isManager = userRoles.includes('manager')
 
@@ -100,7 +100,7 @@ export async function DELETE(request: NextRequest) {
       select: { roles: { select: { role: true } } },
     })
 
-    const userRoles = user?.roles?.map(r => r.role) || []
+    const userRoles = user?.roles?.map(r => r.role?.name) || []
     const isAdmin = userRoles.includes('admin')
 
     if (!isAdmin) {
