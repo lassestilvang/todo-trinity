@@ -32,7 +32,7 @@ export default function AnalyticsPanel({ onClose }: { onClose?: () => void }) {
 
   useEffect(() => {
     handleGenerateAnalytics()
-  }, [timeframe])
+  }, [timeframe, handleGenerateAnalytics])
 
   const calculateStats = () => {
     const completed = tasks.filter(t => t.status === TaskStatus.COMPLETED).length
