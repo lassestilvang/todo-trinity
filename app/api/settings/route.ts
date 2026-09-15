@@ -1,121 +1,113 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
-// GET /api/settings - Get user settings
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to view settings' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
     const userId = session.user.id
 
-    const settings = await prisma.userSetting.findMany({
-      where: { userId }
+    const userSetting = await prisma.userSetting.findUnique({
+      where: { userId },
     })
 
-    // Convert to key-value object
-    const settingsObj: Record<string, string> = {}
-    settings.forEach(s => {
-      settingsObj[s.key] = s.value
-    })
-
-    // Default settings
-    const defaults = {
-      theme: 'system',
-      language: 'en',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      dateFormat: 'MM/DD/YYYY',
-      timeFormat: '12h',
-      notifications: 'true',
-      emailNotifications: 'true',
-      desktopNotifications: 'true',
-      soundNotifications: 'false',
-      autoSave: 'true',
-      showCompleted: 'true',
-      compactMode: 'false',
-      weekStartsOn: '0', // 0 = Sunday, 1 = Monday
-      defaultTaskView: 'list',
-      defaultSortBy: 'createdAt',
-      defaultSortOrder: 'desc',
-      dailyGoal: '5',
-      reminderTime: '09:00',
-      reminderEnabled: 'true',
-      keyboardShortcuts: 'true',
-      animationsEnabled: 'true',
+    if (!userSetting) {
+      // Return default settings
+      return NextResponse.json({
+        theme: 'system',
+        language: 'en',
+        timezone: 'UTC',
+        dateFormat: 'MM/DD/YYYY',
+        timeFormat: '12h',
+        notifications: true,
+        emailNotifications: true,
+        desktopNotifications: true,
+        soundNotifications: false,
+        calendarSync: null,
+        integrations: {},
+      })
     }
 
-    // Merge defaults with user settings
-    const mergedSettings = { ...defaults, ...settingsObj }
-
-    return NextResponse.json({ settings: mergedSettings })
+    return NextResponse.json(userSetting)
   } catch (error) {
-    console.error('Error fetching settings:', error)
+    console.error('Error fetching user settings:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch settings', message: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to fetch user settings' },
       { status: 500 }
     )
   }
 }
 
-// PUT /api/settings - Update user settings
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'Unauthorized', message: 'You must be signed in to update settings' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
     const userId = session.user.id
-    let body: any
+    const body = await request.json()
 
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        { error: 'Invalid JSON', message: 'Request body must be valid JSON' },
-        { status: 400 }
-      )
+    // Only allow specific fields to be updated
+    const allowedUpdates: Record<keyof typeof body, string> = {
+      theme: 'theme',
+      language: 'language',
+      timezone: 'timezone',
+      dateFormat: 'dateFormat',
+      timeFormat: 'timeFormat',
+      notifications: 'notifications',
+      emailNotifications: 'emailNotifications',
+      desktopNotifications: 'desktopNotifications',
+      soundNotifications: 'soundNotifications',
+      calendarSync: 'calendarSync',
+      integrations: 'integrations',
     }
 
-    const { settings } = body
-
-    if (!settings || typeof settings !== 'object') {
-      return NextResponse.json(
-        { error: 'Bad Request', message: 'settings object is required' },
-        { status: 400 }
-      )
+    const updates: Partial<import('@/lib/prisma').UserSetting> = {}
+    for (const [key, value] of Object.entries(body)) {
+      if (key in allowedUpdates) {
+        ;(updates as any)[allowedUpdates[key]] = value
+      }
     }
 
-    // Upsert each setting
-    const updates = Object.entries(settings).map(async ([key, value]) => {
-      return prisma.userSetting.upsert({
-        where: {
-          userId_key: { userId, key }
-        },
-        update: { value: String(value) },
-        create: { userId, key, value: String(value) }
-      })
+    const userSetting = await prisma.userSetting.upsert({
+      where: { userId },
+      update: updates as any,
+      create: {
+        userId,
+        theme: 'system',
+        language: 'en',
+        timezone: 'UTC',
+        dateFormat: 'MM/DD/YYYY',
+        timeFormat: '12h',
+        notifications: true,
+        emailNotifications: true,
+        desktopNotifications: true,
+        soundNotifications: false,
+        calendarSync: Prisma.JsonNull,
+        integrations: {},
+      },
     })
 
-    await Promise.all(updates)
-
-    return NextResponse.json({ message: 'Settings updated successfully' })
+    return NextResponse.json(userSetting)
   } catch (error) {
-    console.error('Error updating settings:', error)
+    console.error('Error updating user settings:', error)
     return NextResponse.json(
-      { error: 'Failed to update settings', message: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to update user settings' },
       { status: 500 }
     )
   }
