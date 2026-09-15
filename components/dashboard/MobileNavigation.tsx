@@ -159,7 +159,7 @@ export default function MobileNavigation({ isOpen = true, onClose }: MobileNavig
                 <p className="text-gray-600 mb-6">Speak your task naturally</p>
 
                 <p className="text-sm text-gray-500 mb-6">
-                  Examples: "Create task: Buy groceries tomorrow" or "Add meeting with team next Monday at 2pm"
+                  Examples: &quot;Create task: Buy groceries tomorrow&quot; or &quot;Add meeting with team next Monday at 2pm&quot;
                 </p>
 
                 <button
