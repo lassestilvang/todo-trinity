@@ -29,17 +29,6 @@ export default function ActivityFeed() {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    fetchActivities()
-
-    // Simulate real-time activity updates
-    const interval = setInterval(() => {
-      fetchActivities()
-    }, 10000) // Poll every 10 seconds
-
-    return () => clearInterval(interval)
-  }, [currentWorkspace?.id])
-
   const fetchActivities = async () => {
     try {
       // Fetch activities for current workspace
@@ -54,6 +43,17 @@ export default function ActivityFeed() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchActivities()
+
+    // Simulate real-time activity updates
+    const interval = setInterval(() => {
+      fetchActivities()
+    }, 10000) // Poll every 10 seconds
+
+    return () => clearInterval(interval)
+  }, [currentWorkspace?.id])
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
@@ -103,8 +103,11 @@ export default function ActivityFeed() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className="bg-white rounded-xl p-6">
+        <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
       </div>
     )
   }
