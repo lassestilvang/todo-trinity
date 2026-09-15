@@ -118,7 +118,7 @@ export class AutomationEngine {
   }
 
   private async executeCreateTask(config: any): Promise<void> {
-    const { title, description, priority, listId, labelIds, dueDate, assignedToId } = config
+    const { title, description, priority, listId, labelIds, dueDate, assignedToId, userId: configUserId } = config
 
     await prisma.task.create({
       data: {
@@ -131,8 +131,7 @@ export class AutomationEngine {
         labels: labelIds && labelIds.length > 0
           ? { connect: labelIds.map((id: string) => ({ id })) }
           : undefined,
-        assignedToId,
-        userId: assignedToId || config.userId,
+        userId: assignedToId || configUserId,
       }
     })
   }
@@ -151,10 +150,8 @@ export class AutomationEngine {
     const { taskId, assignedToId } = config
     if (!taskId) return
 
-    await prisma.task.update({
-      where: { id: taskId },
-      data: { assignedToId }
-    })
+    // Assigning tasks to users is no longer supported
+    // Skip this operation
   }
 
   private async executeAddLabel(config: any): Promise<void> {
