@@ -67,14 +67,11 @@ export interface AuditLog {
   userId: string
   action: string  // Prisma stores action as string; use mapAction() to convert to enum
   resource: string
-  resourceId: string
-  details: any | null
+  resourceId: string | null
+  changes: any | null
   ipAddress: string | null
   userAgent: string | null
-  timestamp: Date
-  metadata: any | null
-  previousState: any | null
-  newState: any | null
+  createdAt: Date
 }
 
 export class AuditService {
@@ -85,10 +82,7 @@ export class AuditService {
     details: any,
     userId: string,
     ipAddress?: string,
-    userAgent?: string,
-    metadata?: any,
-    previousState?: any,
-    newState?: any
+    userAgent?: string
   ): Promise<void> {
     try {
       await prisma.auditLog.create({
@@ -96,12 +90,9 @@ export class AuditService {
           action,
           resource,
           resourceId,
-          details: details ? JSON.stringify(details) : null,
+          changes: details ? JSON.stringify(details) : undefined,
           ipAddress,
           userAgent,
-          metadata: metadata ? JSON.stringify(metadata) : null,
-          previousState: previousState ? JSON.stringify(previousState) : null,
-          newState: newState ? JSON.stringify(newState) : null,
           userId,
         },
       })
@@ -120,31 +111,33 @@ export class AuditService {
       limit?: number
       offset?: number
     } = {}
-  ): Promise<AuditLog[]> {
+  ): Promise<{ action: AuditAction; resource: string; resourceId: string | null; changes: any | null; ipAddress: string | null; userAgent: string | null; createdAt: Date; userId: string }[]> {
     const where: any = {}
     if (filters.userId) where.userId = filters.userId
     if (filters.action) where.action = filters.action
     if (filters.resource) where.resource = filters.resource
     if (filters.startDate || filters.endDate) {
-      where.timestamp = {}
-      if (filters.startDate) where.timestamp.gte = filters.startDate
-      if (filters.endDate) where.timestamp.lte = filters.endDate
+      where.createdAt = {}
+      if (filters.startDate) where.createdAt.gte = filters.startDate
+      if (filters.endDate) where.createdAt.lte = filters.endDate
     }
 
     const logs = await prisma.auditLog.findMany({
       where,
-      orderBy: { timestamp: 'desc' },
+      orderBy: { createdAt: 'desc' },
       take: filters.limit || 100,
       skip: filters.offset || 0,
     })
 
     return logs.map((log) => ({
-      ...log,
-      details: log.details ? JSON.parse(log.details) : null,
-      metadata: log.metadata ? JSON.parse(log.metadata) : null,
-      previousState: log.previousState ? JSON.parse(log.previousState) : null,
-      newState: log.newState ? JSON.parse(log.newState) : null,
-      action: log.action as AuditAction, // Cast to enum for type safety
+      action: log.action as AuditAction,
+      resource: log.resource,
+      resourceId: log.resourceId,
+      changes: log.changes ? JSON.parse(log.changes as string) : null,
+      ipAddress: log.ipAddress,
+      userAgent: log.userAgent,
+      createdAt: log.createdAt,
+      userId: log.userId,
     }))
   }
 
@@ -159,9 +152,9 @@ export class AuditService {
   }> {
     const where: any = {}
     if (startDate || endDate) {
-      where.timestamp = {}
-      if (startDate) where.timestamp.gte = startDate
-      if (endDate) where.timestamp.lte = endDate
+      where.createdAt = {}
+      if (startDate) where.createdAt.gte = startDate
+      if (endDate) where.createdAt.lte = endDate
     }
 
     const logs = await prisma.auditLog.findMany({ where })
@@ -195,7 +188,7 @@ export class AuditService {
 
     const result = await prisma.auditLog.deleteMany({
       where: {
-        timestamp: { lt: cutoffDate },
+        createdAt: { lt: cutoffDate },
       },
     })
 
