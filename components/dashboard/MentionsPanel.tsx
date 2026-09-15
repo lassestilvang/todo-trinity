@@ -3,7 +3,8 @@
 import { useTaskContext } from '@/src/contexts'
 import { useToast } from '@/src/hooks/useToast'
 import { Bell, Check, X, MessageSquare, ArrowRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Mention } from '@/src/types/index'
 
 export default function MentionsPanel({ onClose }: { onClose: () => void }) {
@@ -14,11 +15,7 @@ export default function MentionsPanel({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchMentions()
-  }, [])
-
-  const fetchMentions = async () => {
+  const fetchMentions = useCallback(async () => {
     setLoading(true)
     try {
       // Fetch from the mentions API via TaskContext's API
@@ -32,7 +29,11 @@ export default function MentionsPanel({ onClose }: { onClose: () => void }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [addToast])
+
+  useEffect(() => {
+    fetchMentions()
+  }, [fetchMentions])
 
   const handleMarkAsRead = async () => {
     try {
@@ -113,9 +114,15 @@ export default function MentionsPanel({ onClose }: { onClose: () => void }) {
                   `}
                 >
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
                       {mention.comment.user?.image ? (
-                        <img src={mention.comment.user.image} alt={mention.comment.user.name} className="w-full h-full rounded-full" />
+                        <Image
+                          src={mention.comment.user.image}
+                          alt={mention.comment.user.name}
+                          width={40}
+                          height={40}
+                          className="rounded-full object-cover"
+                        />
                       ) : (
                         <span className="text-sm font-medium text-gray-600">
                           {mention.comment.user?.name?.charAt(0) || '?'}
