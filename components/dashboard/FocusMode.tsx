@@ -27,36 +27,6 @@ export default function FocusMode({ onClose }: FocusModeProps) {
   const [autoStartBreaks, setAutoStartBreaks] = useState(false)
   const [autoStartPomodoros, setAutoStartPomodoros] = useState(false)
 
-  // Reset timer when duration changes
-  useEffect(() => {
-    if (!isRunning && !isBreak) {
-      setTimeLeft(duration * 60)
-    }
-  }, [duration, isRunning, isBreak])
-
-  // Timer effect
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-
-    if (isRunning && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            handleTimerComplete()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    } else if (timeLeft === 0 && isRunning) {
-      handleTimerComplete()
-    }
-
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [isRunning, timeLeft])
-
   const handleTimerComplete = useCallback(() => {
     if (soundEnabled && typeof window !== 'undefined') {
       // Play a notification sound
@@ -99,6 +69,31 @@ export default function FocusMode({ onClose }: FocusModeProps) {
       }
     }
   }, [isBreak, soundEnabled, currentSession, sessionsUntilLongBreak, longBreak, shortBreak, duration, selectedTaskId, autoStartBreaks, autoStartPomodoros, addToast])
+
+  // Timer effect - must come after handleTimerComplete is defined
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+
+    if (isRunning && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            // Call handleTimerComplete through microtask to avoid setState in effect
+            queueMicrotask(() => handleTimerComplete())
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } else if (timeLeft === 0 && isRunning) {
+      // Call handleTimerComplete through microtask to avoid setState in effect
+      queueMicrotask(() => handleTimerComplete())
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isRunning, timeLeft, handleTimerComplete])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
