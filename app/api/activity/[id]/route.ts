@@ -19,10 +19,10 @@ export async function DELETE(request: NextRequest, context: { params: Promise<{ 
     // Check if user is admin
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      include: { workspaces: true }
+      include: { workspaceMembers: true }
     })
 
-    const isAdmin = user?.workspaces?.some(member => member.role === 'ADMIN' || member.role === 'OWNER')
+    const isAdmin = user?.workspaceMembers?.some(member => member.role === 'ADMIN' || member.role === 'OWNER')
 
     if (!isAdmin) {
       return NextResponse.json(
