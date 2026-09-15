@@ -11,8 +11,8 @@ export async function GET(request: Request) {
 
     let leaderboard = await prisma.leaderboard.findFirst({
       where: {
-        type: type.toUpperCase(),
-        period: period.toUpperCase(),
+        type: type.toUpperCase() as any,
+        period: period.toUpperCase() as any,
         isActive: true,
       },
       include: {
@@ -40,13 +40,16 @@ export async function GET(request: Request) {
         name: leaderboard.name,
         type: leaderboard.type,
         period: leaderboard.period,
-        entries: leaderboard.entries.map((entry) => ({
-          id: entry.id,
-          rank: entry.rank,
-          score: entry.score,
-          previousRank: entry.previousRank,
-          user: entry.user,
-        })),
+        entries: leaderboard.entries.map((entry) => {
+          const userData = entry.user as any;
+          return {
+            id: entry.id,
+            rank: entry.rank,
+            score: entry.score,
+            previousRank: entry.previousRank,
+            user: userData,
+          };
+        }),
       },
     })
   } catch (error: any) {
