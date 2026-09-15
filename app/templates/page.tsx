@@ -180,7 +180,7 @@ export default function TemplatesPage() {
       <div className="mt-8 bg-gray-50 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Need a custom template?</h3>
         <p className="text-gray-600 mb-4">
-          Don't see what you're looking for? You can create custom task lists by using the task form with common patterns,
+          Don&#39;t see what you&#39;re looking for? You can create custom task lists by using the task form with common patterns,
           or we can build custom templates for your specific workflow.
         </p>
         <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition-colors">
