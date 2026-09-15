@@ -8,38 +8,26 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
 
-    // Get all templates (system and user's custom)
     const templates = await prisma.template.findMany({
-      where: {
-        OR: [
-          { userId: null }, // System templates
-          { userId: session?.user?.id ?? undefined }, // User's custom templates
-        ]
-      },
       select: {
         id: true,
         name: true,
         description: true,
         icon: true,
-        color: true,
         category: true,
-        isCustom: true,
+        createdAt: true,
+        updatedAt: true,
         tasks: {
           select: {
+            id: true,
             title: true,
             description: true,
             priority: true,
-            order: true,
+            status: true,
           },
-          orderBy: {
-            order: 'asc',
-          }
         },
       },
-      orderBy: [
-        { isCustom: 'desc' },
-        { name: 'asc' },
-      ]
+      orderBy: [{ name: 'asc' }],
     })
 
     return NextResponse.json({ templates })
@@ -99,7 +87,6 @@ export async function POST(request: NextRequest) {
             title: task.title,
             description: task.description || '',
             priority: task.priority || 'NORMAL',
-            order: tasks.indexOf(task),
           }))
         }
       },
@@ -118,7 +105,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// POST /api/templates/:id/apply - Apply a template
+// PUT /api/templates/:id/apply - Apply a template
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -166,6 +153,14 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Check if template has userId or is system template
+    if (template.userId && template.userId !== userId) {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'You can only apply your own templates or system templates' },
+        { status: 403 }
+      )
+    }
+
     // Create tasks from template
     const createdTasks = []
     for (const taskTemplate of template.tasks) {
@@ -173,7 +168,7 @@ export async function PUT(request: NextRequest) {
         data: {
           title: taskTemplate.title,
           description: taskTemplate.description,
-          status: 'TODO',
+          status: 'TODO' as const,
           priority: taskTemplate.priority as any,
           userId,
           listId: listId || null,
@@ -229,7 +224,7 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (template.userId !== userId && !template.isCustom === false) {
+    if (template.userId !== userId && template.isCustom === false) {
       return NextResponse.json(
         { error: 'Forbidden', message: 'You can only delete your own custom templates' },
         { status: 403 }
