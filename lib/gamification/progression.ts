@@ -1,5 +1,10 @@
+const extractPrereqs = (prereqs: any): string[] => {
+  if (!Array.isArray(prereqs)) return []
+  return prereqs.filter((p): p is string => typeof p === 'string')
+}
+
 import { prisma } from '@/lib/prisma'
-import { type User, type SkillTreeNode, type SkillTree } from '@/lib/types/gamification'
+import { type SkillTreeNode, type SkillTree } from '@/lib/types/gamification'
 
 export interface UserPoints {
   id: string
@@ -109,26 +114,34 @@ export async function awardPoints(
     })
   } else {
     const newTotal = (pointsData.totalPoints || 0) + totalAmount
-    const newLevel = await prisma.$runRaw`
-      UPDATE user_points 
-      SET total_points = ${newTotal},
-          level = CASE 
-            WHEN total_points >= ${calculateXpRequired((pointsData.level || 1) + 1)} THEN ${(pointsData.level || 1) + 1}
-            ELSE ${pointsData.level || 1}
-          END,
-          current_level_xp = CASE
-            WHEN total_points >= ${calculateXpRequired((pointsData.level || 1) + 1)} THEN 0
-            ELSE (${pointsData.currentLevelXp || 0} + ${totalAmount})
-          END,
-          level_xp_required = ${calculateXpRequired((pointsData.level || 1) + 1)},
-          last_updated = ${now}
-      WHERE user_id = ${userId}
-      RETURNING *
-    `
+    const nextLevel = (pointsData.level || 1) + 1
+    const xpForNextLevel = calculateXpRequired(nextLevel)
+
+    await prisma.userPoints.update({
+      where: { userId },
+      data: {
+        totalPoints: newTotal,
+        level:
+          newTotal >= xpForNextLevel ? nextLevel : (pointsData.level || 1),
+        currentLevelXp:
+          newTotal >= xpForNextLevel
+            ? 0
+            : (pointsData.currentLevelXp || 0) + totalAmount,
+        levelXpRequired: xpForNextLevel,
+        lastUpdated: now,
+      },
+    })
 
     return {
-      ...newLevel,
+      id: pointsData.id,
+      userId,
       totalPoints: newTotal,
+      level: newTotal >= xpForNextLevel ? nextLevel : (pointsData.level || 1),
+      currentLevelXp:
+        newTotal >= xpForNextLevel
+          ? 0
+          : (pointsData.currentLevelXp || 0) + totalAmount,
+      levelXpRequired: xpForNextLevel,
       lastUpdated: now.toISOString(),
     }
   }
@@ -214,17 +227,17 @@ export async function getSkillTree(userId: string): Promise<SkillTree | null> {
     id: skillTree.id,
     userId: skillTree.userId,
     name: skillTree.name,
-    description: skillTree.description,
+    description: skillTree.description || undefined,
     createdAt: skillTree.createdAt.toISOString(),
     updatedAt: skillTree.updatedAt.toISOString(),
     nodes: skillTree.nodes.map(node => ({
       id: node.id,
       skillTreeId: node.skillTreeId,
       name: node.name,
-      description: node.description,
+      description: node.description || undefined,
       icon: node.icon,
       xpValue: node.xpValue,
-      prerequisites: node.prerequisites || [],
+      prerequisites: extractPrereqs(node.prerequisites),
       isUnlocked: node.isUnlocked,
       isCompleted: node.isCompleted,
       completedAt: node.completedAt?.toISOString() || undefined,
@@ -254,16 +267,17 @@ export async function unlockSkillNode(
   }
 
   // Check prerequisites
-  if (node.prerequisites && node.prerequisites.length > 0) {
+  const prereqs = (node.prerequisites as string[]) || []
+  if (prereqs.length > 0) {
     const prerequisitesMet = await prisma.skillTreeNode.findMany({
       where: {
-        id: { in: node.prerequisites },
+        id: { in: prereqs },
         skillTree: { userId },
         isCompleted: true,
       },
     })
 
-    if (prerequisitesMet.length !== node.prerequisites.length) {
+    if (prerequisitesMet.length !== prereqs.length) {
       return null // Prerequisites not met
     }
   }
@@ -302,10 +316,10 @@ export async function unlockSkillNode(
       id: unlockedNode.id,
       skillTreeId: unlockedNode.skillTreeId,
       name: unlockedNode.name,
-      description: unlockedNode.description,
+      description: unlockedNode.description || undefined,
       icon: unlockedNode.icon,
       xpValue: unlockedNode.xpValue,
-      prerequisites: unlockedNode.prerequisites || [],
+      prerequisites: extractPrereqs(unlockedNode.prerequisites),
       isUnlocked: unlockedNode.isUnlocked,
       isCompleted: unlockedNode.isCompleted,
       completedAt: unlockedNode.completedAt?.toISOString() || undefined,
@@ -316,17 +330,17 @@ export async function unlockSkillNode(
       id: updatedSkillTree.id,
       userId: updatedSkillTree.userId,
       name: updatedSkillTree.name,
-      description: updatedSkillTree.description,
+      description: updatedSkillTree.description || undefined,
       createdAt: updatedSkillTree.createdAt.toISOString(),
       updatedAt: updatedSkillTree.updatedAt.toISOString(),
       nodes: updatedSkillTree.nodes.map(n => ({
         id: n.id,
         skillTreeId: n.skillTreeId,
         name: n.name,
-        description: n.description,
+        description: n.description || undefined,
         icon: n.icon,
         xpValue: n.xpValue,
-        prerequisites: n.prerequisites || [],
+        prerequisites: extractPrereqs(n.prerequisites),
         isUnlocked: n.isUnlocked,
         isCompleted: n.isCompleted,
         completedAt: n.completedAt?.toISOString() || undefined,
@@ -386,10 +400,10 @@ export async function completeSkillNode(
       id: completedNode.id,
       skillTreeId: completedNode.skillTreeId,
       name: completedNode.name,
-      description: completedNode.description,
+      description: completedNode.description || undefined,
       icon: completedNode.icon,
       xpValue: completedNode.xpValue,
-      prerequisites: completedNode.prerequisites || [],
+      prerequisites: extractPrereqs(completedNode.prerequisites),
       isUnlocked: completedNode.isUnlocked,
       isCompleted: completedNode.isCompleted,
       completedAt: completedNode.completedAt?.toISOString() || undefined,
@@ -400,17 +414,17 @@ export async function completeSkillNode(
       id: updatedSkillTree.id,
       userId: updatedSkillTree.userId,
       name: updatedSkillTree.name,
-      description: updatedSkillTree.description,
+      description: updatedSkillTree.description || undefined,
       createdAt: updatedSkillTree.createdAt.toISOString(),
       updatedAt: updatedSkillTree.updatedAt.toISOString(),
       nodes: updatedSkillTree.nodes.map(n => ({
         id: n.id,
         skillTreeId: n.skillTreeId,
         name: n.name,
-        description: n.description,
+        description: n.description || undefined,
         icon: n.icon,
         xpValue: n.xpValue,
-        prerequisites: n.prerequisites || [],
+        prerequisites: extractPrereqs(n.prerequisites),
         isUnlocked: n.isUnlocked,
         isCompleted: n.isCompleted,
         completedAt: n.completedAt?.toISOString() || undefined,
