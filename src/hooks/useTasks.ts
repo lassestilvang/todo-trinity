@@ -392,11 +392,13 @@ export function useSettings() {
 export function useMentions() {
   const queryClient = useQueryClient()
   const [mentions, setMentions] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
 
   const fetchMentions = useCallback(async () => {
     try {
       const data = await api.getMentions()
       setMentions(data.mentions || [])
+      setUnreadCount(data.mentions?.length || 0)
       return data
     } catch (error) {
       throw new Error('Failed to fetch mentions')
@@ -407,18 +409,20 @@ export function useMentions() {
     try {
       await api.markMentionsAsRead()
       setMentions([])
+      setUnreadCount(0)
     } catch (error) {
       throw new Error('Failed to mark mentions as read')
     }
   }, [])
 
   useEffect(() => {
-    fetchMentions()
-  }, [fetchMentions])
+    void fetchMentions()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return {
     mentions,
-    unreadCount: mentions.filter((m: any) => !m.read).length,
+    unreadCount,
     fetchMentions,
     markAsRead,
   }
