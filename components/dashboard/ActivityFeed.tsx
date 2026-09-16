@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useWorkspaceContext } from '@/src/contexts/WorkspaceContext'
 import { useTaskContext } from '@/src/contexts'
 import { Users, Edit, Plus, Trash2, CheckSquare, TrendingUp, Activity } from 'lucide-react'
@@ -29,7 +29,7 @@ export default function ActivityFeed() {
   const [activities, setActivities] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       // Fetch activities for current workspace
       const response = await fetch(`/api/activity?workspaceId=${currentWorkspace?.id}`)
@@ -42,7 +42,7 @@ export default function ActivityFeed() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentWorkspace?.id])
 
   useEffect(() => {
     fetchActivities()
@@ -53,7 +53,7 @@ export default function ActivityFeed() {
     }, 10000) // Poll every 10 seconds
 
     return () => clearInterval(interval)
-  }, [currentWorkspace?.id])
+  }, [currentWorkspace?.id, fetchActivities])
 
   const getActivityIcon = (type: ActivityItem['type']) => {
     switch (type) {
