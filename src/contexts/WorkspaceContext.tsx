@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, ReactNode, useReducer, useEffect, useCallback } from 'react'
+import { createContext, useContext, ReactNode, useReducer, useEffect, useCallback, useMemo } from 'react'
 
 // Types
 interface Workspace {
@@ -119,7 +119,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(workspaceReducer, initialState)
 
   // API helper functions
-  const api = {
+  const api = useMemo(() => ({
     getWorkspaces: async (): Promise<Workspace[]> => {
       const response = await fetch('/api/workspaces')
       if (!response.ok) {
@@ -191,7 +191,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       }
       return response.json()
     }
-  }
+  }), [])
 
   // Action creators
   const fetchWorkspaces = useCallback(async () => {
@@ -202,7 +202,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Unknown error' })
     }
-  }, [])
+  }, [api])
 
   const createWorkspace = useCallback(
     async (workspaceData: Omit<Workspace, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -218,7 +218,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Unknown error' })
       }
     },
-    [state.currentWorkspace]
+    [state.currentWorkspace, api]
   )
 
   const updateWorkspace = useCallback(
@@ -231,7 +231,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Unknown error' })
       }
     },
-    []
+    [api]
   )
 
   const deleteWorkspace = useCallback(
@@ -249,7 +249,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Unknown error' })
       }
     },
-    [state.currentWorkspace, state.workspaces]
+    [state.currentWorkspace, state.workspaces, api]
   )
 
   const switchWorkspace = useCallback(
@@ -310,7 +310,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // Effects
   useEffect(() => {
     fetchWorkspaces()
-  }, [])
+  }, [fetchWorkspaces])
 
   const contextValue: WorkspaceContextType = {
     workspaces: state.workspaces,
