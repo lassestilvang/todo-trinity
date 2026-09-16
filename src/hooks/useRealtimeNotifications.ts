@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRealtime } from './useRealtime'
 import { useToast } from './useToast'
 
@@ -19,10 +19,11 @@ export function useRealtimeNotifications(workspaceId?: string) {
   const [unreadCount, setUnreadCount] = useState(0)
   const { events, presence, isConnected } = useRealtime(workspaceId)
   const { addToast } = useToast()
+  const notificationsRef = useRef<RealtimeNotification[]>([])
 
-  useEffect(() => {
-    // Convert realtime events to notifications
-    const newNotifications: RealtimeNotification[] = events.map(event => ({
+  // Derive notifications from events outside the effect
+  const mappedNotifications = useMemo<RealtimeNotification[]>(() => {
+    return events.map(event => ({
       id: event.id,
       type: mapEventToNotificationType(event.type),
       title: getNotificationTitle(event),
@@ -31,17 +32,22 @@ export function useRealtimeNotifications(workspaceId?: string) {
       timestamp: event.timestamp,
       read: false
     }))
+  }, [events])
 
-    if (newNotifications.length > 0) {
-      setNotifications(prev => [...newNotifications, ...prev].slice(0, 50))
-      setUnreadCount(prev => prev + newNotifications.length)
-
-      // Show toast for new events
-      newNotifications.forEach(notification => {
-        addToast(notification.title, 'info')
-      })
+  useEffect(() => {
+    if (mappedNotifications.length > 0) {
+      // Use ref to track previous notifications to only add new ones
+      const newOnes = mappedNotifications.filter(n => !notificationsRef.current.some(existing => existing.id === n.id))
+      if (newOnes.length > 0) {
+        notificationsRef.current = [...newOnes, ...notificationsRef.current].slice(0, 50)
+        setNotifications(notificationsRef.current)
+        setUnreadCount(prev => prev + newOnes.length)
+        newOnes.forEach(notification => {
+          addToast(notification.title, 'info')
+        })
+      }
     }
-  }, [events, addToast])
+  }, [mappedNotifications, addToast])
 
   useEffect(() => {
     // Mark as read when user interacts
