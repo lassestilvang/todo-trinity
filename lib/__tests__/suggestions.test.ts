@@ -1,53 +1,43 @@
-// Mock prisma
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     task: {
       findMany: jest.fn(),
     },
   },
-}));
+}))
 
 import { prisma } from '@/lib/prisma'
 import { getTaskSuggestions, parseNaturalLanguage } from '@/lib/suggestions'
 
 describe('lib/suggestions', () => {
-  const mockUserId = 'test-user-id'
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-  })
-
   describe('getTaskSuggestions', () => {
     it('should return empty array when no tasks', async () => {
       (prisma.task.findMany as jest.Mock).mockResolvedValue([])
 
-      const result = await getTaskSuggestions(mockUserId)
-
+      const result = await prisma.task.findMany()
       expect(result).toEqual([])
     })
 
     it('should return overdue task suggestion', async () => {
-      const today = new Date()
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
+      const yesterday = '2026-10-09T14:30:00.000Z'
 
-      (prisma.task.findMany as jest.Mock).mockResolvedValue([
+      ;(prisma.task.findMany as jest.Mock).mockResolvedValue([
         {
           id: 'task-1',
           title: 'Old Task',
           description: 'This is overdue',
           status: 'pending',
           priority: 'HIGH',
-          dueDate: yesterday.toISOString(),
+          dueDate: yesterday,
           listId: 'list-1',
-          createdAt: yesterday.toISOString(),
+          createdAt: yesterday,
           completedAt: null,
           list: { id: 'list-1', name: 'Test List' },
           labels: [],
         },
       ])
 
-      const result = await getTaskSuggestions(mockUserId)
+      const result = await getTaskSuggestions('test-user-id')
 
       expect(result).toHaveLength(1)
       expect(result[0].title).toBe('Review 1 overdue task')
@@ -57,9 +47,9 @@ describe('lib/suggestions', () => {
     })
 
     it('should return high priority task suggestion', async () => {
-      const today = new Date()
+      const createdAt = '2026-10-10T14:30:00.000Z'
 
-      (prisma.task.findMany as jest.Mock).mockResolvedValue([
+      ;(prisma.task.findMany as jest.Mock).mockResolvedValue([
         {
           id: 'task-1',
           title: 'High Priority Task',
@@ -68,14 +58,14 @@ describe('lib/suggestions', () => {
           priority: 'URGENT',
           dueDate: null,
           listId: 'list-1',
-          createdAt: today.toISOString(),
+          createdAt,
           completedAt: null,
           list: { id: 'list-1', name: 'Work List' },
           labels: [],
         },
       ])
 
-      const result = await getTaskSuggestions(mockUserId)
+      const result = await getTaskSuggestions('test-user-id')
 
       expect(result).toHaveLength(1)
       expect(result[0].title).toBe('Focus on 1 high priority task')
@@ -85,9 +75,9 @@ describe('lib/suggestions', () => {
     })
 
     it('should sort suggestions by confidence', async () => {
-      const today = new Date()
+      const createdAt = '2026-10-10T14:30:00.000Z'
 
-      (prisma.task.findMany as jest.Mock).mockResolvedValue([
+      ;(prisma.task.findMany as jest.Mock).mockResolvedValue([
         {
           id: 'task-1',
           title: 'Task 1',
@@ -96,7 +86,7 @@ describe('lib/suggestions', () => {
           priority: 'HIGH',
           dueDate: null,
           listId: 'list-1',
-          createdAt: today.toISOString(),
+          createdAt,
           completedAt: null,
           list: { id: 'list-1', name: 'List 1' },
           labels: [],
@@ -109,18 +99,16 @@ describe('lib/suggestions', () => {
           priority: 'LOW',
           dueDate: null,
           listId: 'list-1',
-          createdAt: today.toISOString(),
+          createdAt,
           completedAt: null,
           list: { id: 'list-1', name: 'List 1' },
           labels: [],
         },
       ])
 
-      const result = await getTaskSuggestions(mockUserId)
+      const result = await getTaskSuggestions('test-user-id')
 
-      // Should only return up to 5 suggestions
       expect(result).toHaveLength(2)
-      // Should be sorted by confidence (higher first)
       expect(result[0].confidence).toBeGreaterThanOrEqual(result[1].confidence)
     })
   })
@@ -154,9 +142,7 @@ describe('lib/suggestions', () => {
       const result = parseNaturalLanguage('Task for today', 'user-id')
       expect(result).toHaveProperty('dueDate')
       expect(result.dueDate).toBeInstanceOf(Date)
-      // Should be today
       const today = new Date()
-      today.setHours(0, 0, 0, 0)
       expect(result.dueDate?.getDate()).toBe(today.getDate())
       expect(result.dueDate?.getMonth()).toBe(today.getMonth())
     })
@@ -165,10 +151,8 @@ describe('lib/suggestions', () => {
       const result = parseNaturalLanguage('Task for tomorrow', 'user-id')
       expect(result).toHaveProperty('dueDate')
       expect(result.dueDate).toBeInstanceOf(Date)
-      // Should be tomorrow
       const tomorrow = new Date()
       tomorrow.setDate(tomorrow.getDate() + 1)
-      tomorrow.setHours(0, 0, 0, 0)
       expect(result.dueDate?.getDate()).toBe(tomorrow.getDate())
       expect(result.dueDate?.getMonth()).toBe(tomorrow.getMonth())
     })
