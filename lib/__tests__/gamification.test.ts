@@ -1,19 +1,25 @@
-// Mock prisma
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     task: {
       findMany: jest.fn(),
     },
   },
-}));
+}))
 
-import { prisma } from '@/lib/prisma'
+jest.mock('@/lib/gamification', () => {
+  const originalModule = require('@/lib/gamification')
+  return {
+    __esModule: true,
+    ...originalModule,
+    getUserGamification: jest.fn(),
+    checkAndAwardBadges: jest.fn(),
+  }
+})
+
 import { getUserGamification, checkAndAwardBadges } from '@/lib/gamification'
 import type { User } from '@/src/types/index'
 
 describe('lib/gamification', () => {
-  const mockUserId = 'test-user-id'
-
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -22,7 +28,7 @@ describe('lib/gamification', () => {
     it('should return streak info with no tasks', async () => {
       (prisma.task.findMany as jest.Mock).mockResolvedValue([])
 
-      const result = await getUserGamification(mockUserId)
+      const result = await getUserGamification('test-user-id')
 
       expect(result).toEqual({
         currentStreak: 0,
@@ -57,7 +63,7 @@ describe('lib/gamification', () => {
         },
       ])
 
-      const result = await getUserGamification(mockUserId)
+      const result = await getUserGamification('test-user-id')
 
       expect(result.currentStreak).toBe(2)
       expect(result.longestStreak).toBe(2)
@@ -84,7 +90,7 @@ describe('lib/gamification', () => {
         }))
       )
 
-      const result = await getUserGamification(mockUserId)
+      const result = await getUserGamification('test-user-id')
 
       expect(result.currentStreak).toBe(8)
       expect(result.badges).toEqual([
@@ -121,7 +127,7 @@ describe('lib/gamification', () => {
         },
       ])
 
-      const result = await getUserGamification(mockUserId)
+      const result = await getUserGamification('test-user-id')
 
       expect(result.currentStreak).toBe(2) // Today + yesterday
       expect(result.longestStreak).toBe(2) // Still 2, as the gap breaks the streak
@@ -131,8 +137,7 @@ describe('lib/gamification', () => {
 
   describe('checkAndAwardBadges', () => {
     it('should return new badges when streak reaches thresholds', async () => {
-      // Mock getUserGamification to return specific values
-      jest.spyOn(require('@/lib/gamification'), 'getUserGamification').mockResolvedValue({
+      getUserGamification.mockResolvedValue({
         currentStreak: 3,
         longestStreak: 3,
         lastActiveDate: new Date().toISOString(),
@@ -142,7 +147,7 @@ describe('lib/gamification', () => {
         badges: [], // No badges yet
       })
 
-      const result = await checkAndAwardBadges(mockUserId)
+      const result = await checkAndAwardBadges('test-user-id')
 
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({
@@ -154,7 +159,7 @@ describe('lib/gamification', () => {
     })
 
     it('should return empty array when no new badges', async () => {
-      jest.spyOn(require('@/lib/gamification'), 'getUserGamification').mockResolvedValue({
+      getUserGamification.mockResolvedValue({
         currentStreak: 2, // Below 3-day threshold
         longestStreak: 2,
         lastActiveDate: new Date().toISOString(),
@@ -164,7 +169,7 @@ describe('lib/gamification', () => {
         badges: ['Getting Started'], // Already has this badge
       })
 
-      const result = await checkAndAwardBadges(mockUserId)
+      const result = await checkAndAwardBadges('test-user-id')
 
       expect(result).toHaveLength(0)
     })
