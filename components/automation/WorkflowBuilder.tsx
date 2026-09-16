@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { TaskStatus, Priority } from '@/src/types/index'
 import { useTaskContext } from '@/src/contexts/TaskContext'
 import { useToast } from '@/src/hooks/useToast'
@@ -88,11 +88,7 @@ export default function WorkflowBuilder() {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null)
-  const [canvasNodes, setCanvasNodes] = useState<CanvasNode[]>([])
-  const { addToast } = useToast()
-
-// Initialize canvas node types - moved outside effect to avoid setState in effect
-  const canvasNodeTypes = [
+  const [canvasNodes, setCanvasNodes] = useState<CanvasNode[]>([
     { id: 'trigger-schedule', type: 'trigger', name: 'Schedule', icon: Clock },
     { id: 'trigger-task-created', type: 'trigger', name: 'Task Created', icon: CheckCircle },
     { id: 'trigger-task-completed', type: 'trigger', name: 'Task Completed', icon: ListCheck },
@@ -102,12 +98,8 @@ export default function WorkflowBuilder() {
     { id: 'action-add-label', type: 'action', name: 'Add Label', icon: Filter },
     { id: 'action-move-task', type: 'action', name: 'Move Task', icon: ArrowRight },
     { id: 'condition-high-priority', type: 'condition', name: 'High Priority Check', icon: AlertCircle },
-  ]
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    setCanvasNodes(canvasNodeTypes)
-  }, [])
+  ])
+  const { addToast } = useToast()
 
   const createWorkflow = () => {
     const newWorkflow: Workflow = {
