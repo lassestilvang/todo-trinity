@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { EnhancedNLPParser } from '@/lib/suggestions'
 import { useMutation } from '@tanstack/react-query'
 
@@ -28,7 +28,8 @@ export function useSuggestions(): UseSuggestionsResult {
   const [isParsing, setIsParsing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const nlpParser = new EnhancedNLPParser()
+  // Memoize the parser instance so it doesn't change on every render
+  const nlpParser = useMemo(() => new EnhancedNLPParser(), [])
 
   const parseNaturalLanguage = useCallback(
     async (text: string): Promise<SuggestionResult> => {
