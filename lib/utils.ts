@@ -13,16 +13,34 @@ export function formatTime(date: Date): string {
   })
 }
 
-export function formatDate(date: Date): string {
+export function formatDate(date: Date | null | undefined): string {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return 'Invalid Date'
+  }
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
   })
 }
 
+export function formatTime(date: Date): string {
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return 'Invalid Date'
+  }
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  })
+}
+
 export function formatDateTime(date: Date): string {
-  return `${formatDate(date)} at ${formatTime(date)}`
+  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+    return 'Invalid Date'
+  }
+  return `${formatDate(date)}, ${formatTime(date)}`
 }
 
 export function getPriorityColor(priority: string): string {
@@ -73,6 +91,7 @@ export function capitalizeFirstLetter(string: string): string {
 }
 
 export function truncateString(str: string, maxLength: number): string {
+  if (maxLength <= 0) return ''
   if (str.length <= maxLength) return str
   return str.slice(0, maxLength) + '...'
 }
@@ -84,6 +103,17 @@ export function isValidEmail(email: string): boolean {
 
 export function isValidPassword(password: string): boolean {
   return password.length >= 8
+}
+
+export const priorityOrder: Record<string, number> = { Low: 1, Medium: 2, High: 3, Urgent: 4 }
+
+export function getInitials(name: string): string {
+  if (!name || name.trim() === '') return ''
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word[0].toUpperCase())
+    .join('')
 }
 
 export function getDaysUntil(date: Date): number {
