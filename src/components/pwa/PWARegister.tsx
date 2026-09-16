@@ -111,7 +111,7 @@ export default function PWARegister() {
         addToast('Notifications blocked', 'warning')
       }
     }
-  }, [swRegistration])
+  }, [swRegistration, addToast])
 
   const installPWA = useCallback(async () => {
     if (typeof window !== 'undefined' && 'beforeinstallprompt' in window) {
