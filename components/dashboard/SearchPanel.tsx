@@ -101,7 +101,7 @@ export default function SearchPanel({ onClose }: { onClose: () => void }) {
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{search.name}</h4>
                         {search.query && (
-                          <p className="text-xs text-gray-500 mb-1">Query: "{search.query}"</p>
+                          <p className="text-xs text-gray-500 mb-1">Query: &ldquo;{search.query}&rdquo;</p>
                         )}
                         {Object.keys(search.filters || {}).length > 0 && (
                           <p className="text-xs text-gray-500">
