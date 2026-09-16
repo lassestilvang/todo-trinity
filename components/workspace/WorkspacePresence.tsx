@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 
 interface UserPresence {
   id: string
@@ -120,9 +121,11 @@ export default function WorkspacePresence({ workspaceId }: { workspaceId?: strin
               className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center ${getStatusColor(user.status)}`}
             >
               {user.image ? (
-                <img
+                <Image
                   src={user.image}
                   alt={user.name}
+                  width={24}
+                  height={24}
                   className="w-6 h-6 rounded-full object-cover"
                 />
               ) : (
