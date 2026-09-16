@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 
 interface LeaderboardEntry {
   id: string
@@ -31,7 +32,7 @@ export default function Leaderboard({
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     setIsLoading(true)
     try {
       const params = new URLSearchParams({
@@ -53,11 +54,11 @@ export default function Leaderboard({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [type, period, limit, userId])
 
   useEffect(() => {
     fetchLeaderboard()
-  }, [type, period, limit, userId])
+  }, [type, period, limit, userId, fetchLeaderboard])
 
   const getRankChange = (rank: number, previousRank?: number) => {
     if (!previousRank) return { text: 'NEW', className: 'text-gray-500' }
@@ -141,9 +142,11 @@ export default function Leaderboard({
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                         {entry.user?.image ? (
-                          <img
+                          <Image
                             src={entry.user.image}
                             alt={entry.user.name || 'User'}
+                            width={32}
+                            height={32}
                             className="w-8 h-8 rounded-full object-cover"
                           />
                         ) : (
