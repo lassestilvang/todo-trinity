@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTaskContext } from '@/src/contexts'
 import { useSuggestions } from '@/src/hooks/useSuggestions'
 import { TaskStatus, Priority } from '@/src/types/index'
@@ -23,57 +23,24 @@ export default function VoiceInput({ onTaskCreated }: VoiceInputProps) {
   const [error, setError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<string[]>([])
 
+  // Refs to track latest values for use in callbacks
+  const transcriptRef = useRef(transcript)
+  const processVoiceCommandRef = useRef<((text: string) => Promise<void>) | null>(null)
+
   // Check if SpeechRecognition is available
-  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  const SpeechRecognition =
+    typeof window !== 'undefined'
+      ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      : undefined
   const isSupported = !!SpeechRecognition
 
   useEffect(() => {
     if (!isSupported) {
       setError('Speech recognition not supported in this browser')
     }
-  }, [])
+  }, [isSupported])
 
-  const startListening = useCallback(() => {
-    if (!isSupported) return
-
-    const recognition = new SpeechRecognition()
-    recognition.continuous = false
-    recognition.interimResults = true
-    recognition.lang = 'en-US'
-
-    recognition.onstart = () => {
-      setIsListening(true)
-      setError(null)
-      setTranscript('')
-      setConfidence(0)
-      setSuggestions([])
-    }
-
-    recognition.onresult = (event: any) => {
-      const transcript = Array.from(event.results as any[])
-        .map((result: any) => result[0])
-        .map((result: any) => result.transcript)
-        .join('')
-
-      setTranscript(transcript)
-    }
-
-    recognition.onend = () => {
-      setIsListening(false)
-      if (transcript.trim()) {
-        processVoiceCommand(transcript)
-      }
-    }
-
-    recognition.onerror = (event: any) => {
-      setIsListening(false)
-      setError(`Speech recognition error: ${event.error}`)
-    }
-
-    recognition.start()
-  }, [transcript])
-
-  const processVoiceCommand = async (text: string) => {
+  const processVoiceCommand = useCallback(async (text: string) => {
     setIsProcessing(true)
     setError(null)
 
@@ -115,7 +82,53 @@ export default function VoiceInput({ onTaskCreated }: VoiceInputProps) {
     } finally {
       setIsProcessing(false)
     }
-  }
+  }, [parseNaturalLanguage, createTask, fetchTasks, addToast, onTaskCreated])
+
+  // Keep ref updated with latest processVoiceCommand
+  useEffect(() => {
+    processVoiceCommandRef.current = processVoiceCommand
+  }, [processVoiceCommand])
+
+  const startListening = useCallback(() => {
+    if (!isSupported) return
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = false
+    recognition.interimResults = true
+    recognition.lang = 'en-US'
+
+    recognition.onstart = () => {
+      setIsListening(true)
+      setError(null)
+      setTranscript('')
+      setConfidence(0)
+      setSuggestions([])
+    }
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results as any[])
+        .map((result: any) => result[0])
+        .map((result: any) => result.transcript)
+        .join('')
+
+      setTranscript(transcript)
+    }
+
+    recognition.onend = () => {
+      setIsListening(false)
+      const currentTranscript = transcriptRef.current
+      if (currentTranscript.trim()) {
+        processVoiceCommandRef.current?.(currentTranscript)
+      }
+    }
+
+    recognition.onerror = (event: any) => {
+      setIsListening(false)
+      setError(`Speech recognition error: ${event.error}`)
+    }
+
+    recognition.start()
+  }, [isSupported, SpeechRecognition])
 
   const stopListening = useCallback(() => {
     // SpeechRecognition automatically stops on onend
@@ -175,7 +188,7 @@ export default function VoiceInput({ onTaskCreated }: VoiceInputProps) {
 
         {transcript && !isListening && (
           <div className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-3 py-2 rounded-md text-sm max-w-xs whitespace-normal z-10">
-            "{transcript}"
+            &ldquo;{transcript}&rdquo;
           </div>
         )}
 
