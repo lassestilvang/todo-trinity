@@ -13,6 +13,12 @@ const config: Config = {
     '<rootDir>/**/*.test.{ts,tsx}',
     '<rootDir>/**/*.spec.{ts,tsx}',
   ],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(msw|@testing-library|@mswjs|babel-jest)/)',
+  ],
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^@/src/(.*)$': '<rootDir>/src/$1',
