@@ -278,7 +278,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Unknown error' })
       }
     },
-    []
+    [api]
   )
 
   const inviteToWorkspace = useCallback(
@@ -291,7 +291,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Unknown error' })
       }
     },
-    [state.invitations]
+    [state.invitations, api]
   )
 
   const removeFromWorkspace = useCallback(
@@ -304,7 +304,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         dispatch({ type: 'SET_ERROR', payload: error instanceof Error ? error.message : 'Unknown error' })
       }
     },
-    []
+    [api]
   )
 
   // Effects
