@@ -1,14 +1,11 @@
-// This file contains the mock server setup for testing
-// Since we can't run these tests without Jest installed, we'll create a minimal mock
+// Mock server setup for testing - simplified without MSW
+// Since the existing mock has no handlers, we keep this minimal
 
-import { setupServer } from 'msw/node'
+// Mock matchMedia globally is already handled in jest.setup.ts
 
-export const server = setupServer(
-  // Add your API mocks here
-  // Example:
-  // rest.get('/api/test', (req, res, ctx) => {
-  //   return res(ctx.json({ test: 'data' }))
-  // })
-)
-
-export { rest } from 'msw'
+// Empty setup - no API mocks needed for now
+export const server = {
+  listen: () => {},
+  close: () => {},
+  resetHandlers: () => {},
+}
