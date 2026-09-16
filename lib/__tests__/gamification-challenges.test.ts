@@ -1,7 +1,7 @@
-"""
-Comprehensive test suite for Phase 8 gamification challenges
-Tests all functionality in lib/gamification/challenges.ts
-"""
+/**
+ * Comprehensive test suite for Phase 8 gamification challenges
+ * Tests all functionality in lib/gamification/challenges.ts
+ */
 
 import { ChallengeEngine } from '@/lib/gamification/challenges'
 import { prisma } from '@/lib/prisma'
