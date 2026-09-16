@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { TaskStatus, Priority } from '@/src/types/index'
 import { useTaskContext } from '@/src/contexts'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts'
@@ -15,7 +15,7 @@ export default function AnalyticsPanel({ onClose }: { onClose?: () => void }) {
   const [isLoading, setIsLoading] = useState(false)
   const [timeframe, setTimeframe] = useState('week')
 
-  const handleGenerateAnalytics = async () => {
+  const handleGenerateAnalytics = useCallback(async () => {
     setIsLoading(true)
     try {
       const userId = 'user123'
@@ -28,7 +28,7 @@ export default function AnalyticsPanel({ onClose }: { onClose?: () => void }) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [getAnalytics, getUserStats, timeframe])
 
   useEffect(() => {
     handleGenerateAnalytics()
