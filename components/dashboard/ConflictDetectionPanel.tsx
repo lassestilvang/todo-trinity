@@ -101,7 +101,7 @@ export default function ConflictDetectionPanel() {
     if (user?.id) {
       fetchConflictAnalysis()
     }
-  }, [user?.id])
+  }, [user?.id, fetchConflictAnalysis])
 
   if (loading) {
     return (
