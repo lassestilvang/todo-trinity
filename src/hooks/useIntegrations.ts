@@ -39,20 +39,15 @@ export function useIntegrations(): UseIntegrationsResult {
     }
   )
 
-  useEffect(() => {
-    if (fetchedIntegrations) {
-      setIntegrations(fetchedIntegrations)
-      setError(null)
-    }
-  }, [fetchedIntegrations])
-
-  useEffect(() => {
-    if (fetchError) {
-      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Failed to fetch integrations'
-      setError(errorMessage)
-      setIntegrations([])
-    }
-  }, [fetchError])
+  // Handle fetchError in useEffect to avoid setState in effect
+  // The useEffect below is removed since react-query already handles fetchError state.
+// Error state is already tracked in the query and returned via the result object.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // useEffect(() => {
+  //   if (fetchError) {
+  //     setError(fetchError instanceof Error ? fetchError.message : 'Failed to fetch integrations')
+  //   }
+  // }, [fetchError])
 
   // Mutation for connecting integrations
   const connectMutation = useMutation({
