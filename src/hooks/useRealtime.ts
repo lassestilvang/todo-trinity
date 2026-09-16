@@ -55,63 +55,7 @@ export function useRealtime(workspaceId?: string) {
   const lastEventIdRef = useRef<number>(0)
   const { updateTask, deleteTask } = useTaskContext()
 
-  const connect = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close()
-    }
-
-    const params = new URLSearchParams()
-    if (workspaceId) params.append('workspaceId', workspaceId)
-    if (lastEventIdRef.current > 0) params.append('since', lastEventIdRef.current.toString())
-
-    const eventSource = new EventSource(`/api/realtime?${params.toString()}`)
-    eventSourceRef.current = eventSource
-
-    eventSource.onopen = () => {
-      setState(prev => ({ ...prev, isConnected: true }))
-    }
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'sync') {
-          // Initial sync with missed events
-          data.events.forEach((event: RealtimeEvent) => {
-            lastEventIdRef.current = Math.max(lastEventIdRef.current, event.timestamp)
-            handleEvent(event)
-          })
-        } else if (data.type === 'presence_update') {
-          setState(prev => ({
-            ...prev,
-            presence: data.users || [],
-            onlineUsers: data.users?.filter((u: UserPresence) => u.status === 'online').length || 0,
-          }))
-        } else {
-          // Individual event
-          lastEventIdRef.current = Math.max(lastEventIdRef.current, data.timestamp)
-          handleEvent(data)
-        }
-      } catch (error) {
-        console.error('Failed to parse realtime event:', error)
-      }
-    }
-
-    eventSource.onerror = () => {
-      setState(prev => ({ ...prev, isConnected: false }))
-      eventSource.close()
-      scheduleReconnect()
-    }
-  }, [workspaceId])
-
-  const scheduleReconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-    }
-    reconnectTimeoutRef.current = setTimeout(() => {
-      connect()
-    }, 5000)
-  }, [connect])
-
+  // Define handleEvent first since it's used in connect
   const handleEvent = useCallback((event: RealtimeEvent) => {
     setState(prev => ({
       ...prev,
@@ -168,6 +112,73 @@ export function useRealtime(workspaceId?: string) {
         break
     }
   }, [updateTask, deleteTask])
+
+  // Use a ref to break the circular dependency between connect and scheduleReconnect
+  const connectRef = useRef<() => void>()
+
+  // Define scheduleReconnect first since it's used in connect
+  const scheduleReconnect = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current)
+    }
+    reconnectTimeoutRef.current = setTimeout(() => {
+      connectRef.current?.()
+    }, 5000)
+  }, [])
+
+  // Define connect after its dependencies are defined
+  const connect = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+    }
+
+    const params = new URLSearchParams()
+    if (workspaceId) params.append('workspaceId', workspaceId)
+    if (lastEventIdRef.current > 0) params.append('since', lastEventIdRef.current.toString())
+
+    const eventSource = new EventSource(`/api/realtime?${params.toString()}`)
+    eventSourceRef.current = eventSource
+
+    eventSource.onopen = () => {
+      setState(prev => ({ ...prev, isConnected: true }))
+    }
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.type === 'sync') {
+          // Initial sync with missed events
+          data.events.forEach((event: RealtimeEvent) => {
+            lastEventIdRef.current = Math.max(lastEventIdRef.current, event.timestamp)
+            handleEvent(event)
+          })
+        } else if (data.type === 'presence_update') {
+          setState(prev => ({
+            ...prev,
+            presence: data.users || [],
+            onlineUsers: data.users?.filter((u: UserPresence) => u.status === 'online').length || 0,
+          }))
+        } else {
+          // Individual event
+          lastEventIdRef.current = Math.max(lastEventIdRef.current, data.timestamp)
+          handleEvent(data)
+        }
+      } catch (error) {
+        console.error('Failed to parse realtime event:', error)
+      }
+    }
+
+    eventSource.onerror = () => {
+      setState(prev => ({ ...prev, isConnected: false }))
+      eventSource.close()
+      scheduleReconnect()
+    }
+  }, [workspaceId, handleEvent, scheduleReconnect])
+
+  // Keep the ref updated with the latest connect function
+  useEffect(() => {
+    connectRef.current = connect
+  }, [connect])
 
   // Update user presence
   const updatePresence = useCallback(async (page?: string, workspaceId?: string) => {
