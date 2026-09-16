@@ -50,7 +50,7 @@ export default function AIPrioritySuggestions() {
     if (user?.id) {
       fetchPrioritySuggestions()
     }
-  }, [user?.id])
+  }, [user?.id, fetchPrioritySuggestions])
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
