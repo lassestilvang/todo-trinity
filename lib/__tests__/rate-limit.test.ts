@@ -1,11 +1,10 @@
-import { rateLimit } from '@/lib/rate-limit'
+import { rateLimit, rateLimitStore } from '@/lib/rate-limit'
 import { NextResponse } from 'next/server'
 
 describe('lib/rate-limit', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     // Clear the rate limit store
-    // @ts-ignore - accessing internal store for cleanup
     rateLimitStore.clear()
   })
 
