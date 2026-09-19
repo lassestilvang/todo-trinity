@@ -112,7 +112,7 @@ describe('Integration: Complete User Workflow', () => {
   })
 
   it('should handle gamification calculation', async () => {
-    // Mock tasks for gamification
+    // Mock tasks for gamification - 2 tasks completed on consecutive days
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const yesterday = new Date(today)
@@ -121,13 +121,15 @@ describe('Integration: Complete User Workflow', () => {
     ;(prisma.task.findMany as jest.Mock).mockResolvedValue([
       {
         id: 'task-1',
-        completedAt: today.toISOString(),
+        completedAt: yesterday.toISOString(),
+        status: 'COMPLETED',
         createdAt: today.toISOString(),
       },
       {
         id: 'task-2',
-        completedAt: yesterday.toISOString(),
-        createdAt: yesterday.toISOString(),
+        completedAt: today.toISOString(),
+        status: 'COMPLETED',
+        createdAt: today.toISOString(),
       },
     ])
 
