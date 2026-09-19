@@ -1,24 +1,29 @@
+/**
+ * @jest-environment jsdom
+ */
 import { render, screen, waitFor } from '@testing-library/react'
 import { UserProvider, useUser } from '@/src/contexts/UserContext'
-
-// Mock next-auth
-jest.mock('next-auth/react', () => ({
-  useSession: jest.fn(),
-  SessionProvider: ({ children }: any) => <>{children}</>,
-}))
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   redirect: jest.fn(),
 }))
 
+// Mock next-auth/react to provide session data
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(),
+  SessionProvider: ({ children }: any) => <>{children}</>,
+}))
+
 const TestComponent = () => {
-  const { user, loading, error } = useUser()
+  const { user, loading, error, login, logout } = useUser()
   return (
     <div>
       <span data-testid="loading">{loading ? 'loading' : 'loaded'}</span>
       <span data-testid="user">{user?.email || 'no-user'}</span>
       <span data-testid="error">{error || 'no-error'}</span>
+      <button data-testid="login-btn" onClick={() => login({ id: 'user-1', email: 'test@example.com', name: 'Test User' })}>Login</button>
+      <button data-testid="logout-btn" onClick={logout}>Logout</button>
     </div>
   )
 }
@@ -26,23 +31,14 @@ const TestComponent = () => {
 describe('src/contexts/UserContext', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // Clear localStorage
+    localStorage.clear()
   })
 
   describe('UserProvider', () => {
-    it('should provide user context to children', async () => {
-      const mockSession = {
-        user: {
-          id: 'user-1',
-          email: 'test@example.com',
-          name: 'Test User',
-        },
-      }
-
-      // @ts-ignore - need to mock the useSession return
-      require('next-auth/react').useSession.mockReturnValue({
-        data: mockSession,
-        status: 'authenticated',
-      })
+    it('should provide user context to children from localStorage', async () => {
+      // Pre-populate localStorage
+      localStorage.setItem('user', JSON.stringify({ id: 'user-1', email: 'test@example.com', name: 'Test User' }))
 
       render(
         <UserProvider>
@@ -55,35 +51,14 @@ describe('src/contexts/UserContext', () => {
       })
     })
 
-    it('should handle loading state', async () => {
-      // @ts-ignore
-      require('next-auth/react').useSession.mockReturnValue({
-        data: null,
-        status: 'loading',
-      })
-
+    it('should render with no user when localStorage is empty', async () => {
       render(
         <UserProvider>
           <TestComponent />
         </UserProvider>
       )
 
-      expect(screen.getByTestId('loading').textContent).toBe('loading')
-    })
-
-    it('should handle unauthenticated state', async () => {
-      // @ts-ignore
-      require('next-auth/react').useSession.mockReturnValue({
-        data: null,
-        status: 'unauthenticated',
-      })
-
-      render(
-        <UserProvider>
-          <TestComponent />
-        </UserProvider>
-      )
-
+      // No stored user, so user is null and loading should complete
       await waitFor(() => {
         expect(screen.getByTestId('loading').textContent).toBe('loaded')
         expect(screen.getByTestId('user').textContent).toBe('no-user')
