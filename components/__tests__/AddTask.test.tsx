@@ -1,126 +1,88 @@
+/**
+ * @jest-environment jsdom
+ */
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { AddTask } from '@/components/tasks/AddTask'
-import { useForm } from 'react-hook-form'
+import AddTask from '@/components/tasks/AddTask'
+import { ReactNode } from 'react'
 
-// Mock react-hook-form
-jest.mock('react-hook-form', () => ({
-  useForm: jest.fn(),
-}))
-
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-    button: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+// Create a test wrapper with QueryClientProvider
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
   },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
-}))
+})
+
+function TestWrapper({ children }: { children: ReactNode }) {
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  )
+}
 
 const mockOnCreate = jest.fn()
+
 const mockOnCancel = jest.fn()
 
 describe('components/tasks/AddTask', () => {
-  const mockFormMethods = {
-    register: jest.fn(),
-    handleSubmit: jest.fn(),
-    reset: jest.fn(),
-    watch: jest.fn(),
-    setValue: jest.fn(),
-    watch: jest.fn(),
-  }
-
   beforeEach(() => {
     jest.clearAllMocks()
   })
 
-  it('should render form fields', () => {
-    jest.spyOn(useForm, 'useForm').mockReturnValue(mockFormMethods)
-
-    render(<AddTask onCreate={mockOnCreate} onCancel={mockOnCancel} />)
-    expect(screen.getByLabelText('Title')).toBeInTheDocument()
-    expect(screen.getByLabelText('Description')).toBeInTheDocument()
-    expect(screen.getByLabelText('Priority')).toBeInTheDocument()
-    expect(screen.getByLabelText('Due Date')).toBeInTheDocument()
+  it('should render title input and add button', () => {
+    render(<AddTask onCreate={mockOnCreate} />)
+    expect(screen.getByPlaceholderText('What needs to be done?')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /add/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument()
   })
 
   it('should submit task when form is valid', () => {
-    jest.spyOn(useForm, 'useForm').mockReturnValue(mockFormMethods)
-
-    const onSubmit = jest.fn()
-    mockFormMethods.handleSubmit(onSubmit)
-
-    render(
-      <AddTask
-        onCreate={mockOnCreate}
-        onCancel={mockOnCancel}
-        {...mockFormMethods}
-      />
-    )
+    render(<AddTask onCreate={mockOnCreate} />)
 
     fireEvent.change(
-      screen.getByLabelText('Title'),
+      screen.getByPlaceholderText('What needs to be done?'),
       { target: { value: 'New Task' } }
     )
+    fireEvent.click(screen.getByRole('button', { name: /add/i }))
+
+    expect(mockOnCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'New Task',
+        description: undefined,
+      })
+    )
+  })
+
+  it('should handle clear', () => {
+    render(<AddTask onCreate={mockOnCreate} />)
+
     fireEvent.change(
-      screen.getByLabelText('Priority'),
-      { target: { value: 'high' } }
+      screen.getByPlaceholderText('What needs to be done?'),
+      { target: { value: 'New Task' } }
     )
-    fireEvent.click(screen.getByRole('button', { name: /create task/i }))
+    fireEvent.click(screen.getByRole('button', { name: /clear/i }))
 
-    expect(onSubmit).toHaveBeenCalled()
-    expect(mockOnCreate).toHaveBeenCalled()
+    expect(screen.getByPlaceholderText('What needs to be done?')).toHaveValue('')
   })
 
-  it('should handle cancel', () => {
-    jest.spyOn(useForm, 'useForm').mockReturnValue(mockFormMethods)
+  it('should not submit empty task', () => {
+    render(<AddTask onCreate={mockOnCreate} />)
+    fireEvent.click(screen.getByRole('button', { name: /add/i }))
 
-    render(<AddTask onCreate={mockOnCreate} onCancel={mockOnCancel} />)
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
-    expect(mockOnCancel).toHaveBeenCalled()
+    expect(mockOnCreate).not.toHaveBeenCalled()
   })
 
-  it('should reset form when cancel is clicked', () => {
-    jest.spyOn(useForm, 'useForm').mockReturnValue(mockFormMethods)
+  it('should have priority options when expanded', () => {
+    render(<AddTask onCreate={mockOnCreate} />)
 
-    render(
-      <AddTask
-        onCreate={mockOnCreate}
-        onCancel={mockOnCancel}
-        {...mockFormMethods}
-      />
-    )
+    fireEvent.click(screen.getByRole('button', { name: /more/i }))
 
-    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
-    expect(mockFormMethods.reset).toHaveBeenCalled()
-  })
-
-  it('should show validation errors', () => {
-    jest.spyOn(useForm, 'useForm').mockReturnValue(mockFormMethods)
-
-    const onSubmit = jest.fn()
-    mockFormMethods.handleSubmit(onSubmit)
-
-    render(
-      <AddTask
-        onCreate={mockOnCreate}
-        onCancel={mockOnCancel}
-        {...mockFormMethods}
-      />
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: /create task/i }))
-
-    // Should have called submit even without valid form data
-    // (form library handles validation)
-    expect(mockFormMethods.reset).toHaveBeenCalled()
-  })
-
-  it('should have priority options', () => {
-    jest.spyOn(useForm, 'useForm').mockReturnValue(mockFormMethods)
-
-    render(<AddTask onCreate={mockOnCreate} onCancel={mockOnCancel} />)
-    expect(screen.getByLabelText('Urgent')).toBeInTheDocument()
-    expect(screen.getByLabelText('High')).toBeInTheDocument()
-    expect(screen.getByLabelText('Medium')).toBeInTheDocument()
-    expect(screen.getByLabelText('Low')).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Low' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Normal' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'High' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Urgent' })).toBeInTheDocument()
   })
 })
