@@ -1,3 +1,20 @@
+// Type guard for Date to distinguish between Date and string
+function isDate(input: any): input is Date {
+  return input instanceof Date && !isNaN(input.getTime())
+}
+
+function ensureDate(input: Date | string): Date {
+  return isDate(input) ? input : new Date(input)
+}
+
+function ensureString(input: string | undefined | null): string | undefined {
+  return input === undefined || input === null ? undefined : input
+}
+
+function ensureNumber(input: number | undefined | null): number | undefined {
+  return input === undefined || input === null ? undefined : input
+}
+
 import { prisma } from '@/lib/prisma'
 import { type Challenge, type ChallengeParticipant, type ChallengeType } from '@/lib/types/gamification'
 
@@ -58,7 +75,6 @@ export class ChallengeEngine {
       },
     })
 
-    const now2 = new Date()
     return challenges.map(c => ({
       ...c,
       startDate: c.startDate.toISOString(),
@@ -175,10 +191,10 @@ export class ChallengeEngine {
     if (taskCompleted) {
       const pointValue = this.calculatePointValue({
         ...challenge,
-        startDate: new Date(challenge.startDate).toISOString(),
-        endDate: new Date(challenge.endDate).toISOString(),
-        createdAt: new Date(challenge.createdAt).toISOString(),
-        updatedAt: new Date(challenge.updatedAt).toISOString(),
+        startDate: challenge.startDate.toISOString(),
+        endDate: challenge.endDate.toISOString(),
+        createdAt: challenge.createdAt.toISOString(),
+        updatedAt: challenge.updatedAt.toISOString(),
         rewardBadgeId: challenge.rewardBadgeId || undefined,
         maxParticipants: challenge.maxParticipants || undefined,
       })
@@ -204,11 +220,11 @@ export class ChallengeEngine {
    * Calculate points for a completed task within a challenge
    */
   private static calculatePointValue(challenge: Challenge): number {
-    const end = new Date(challenge.endDate)
-    const start = new Date(challenge.startDate)
+    const end = ensureDate(challenge.endDate)
+    const start = ensureDate(challenge.startDate)
     const durationDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
     const durationBonus = Math.max(0, Math.floor((30 - durationDays) / 2))
-    return challenge.rewardPoints + durationBonus
+    return ensureNumber(challenge.rewardPoints) || 50 + durationBonus
   }
 
   /**
