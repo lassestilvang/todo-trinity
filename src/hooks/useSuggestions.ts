@@ -38,21 +38,25 @@ export function useSuggestions(): UseSuggestionsResult {
 
       try {
         // Use the enhanced NLP parser
-        const result = await nlpParser.parseNaturalLanguage(text)
+        const result = nlpParser.parseNaturalLanguage(text)
+
+        if (!result) {
+          throw new Error('Failed to parse natural language text')
+        }
 
         // Convert to the expected format
         return {
           task: {
-            title: result.task.title,
-            description: result.task.description,
-            priority: result.task.priority as any,
-            status: result.task.status as any,
-            dueDate: result.task.dueDate,
-            listId: result.task.listId,
-            labelIds: result.task.labelIds
+            title: result.title,
+            description: result.description || '',
+            priority: (result.priority || 'NORMAL') as any,
+            status: (result.status || 'todo') as any,
+            dueDate: result.dueDate ? result.dueDate.toISOString() : null,
+            listId: result.listId || null,
+            labelIds: result.labelIds || []
           },
-          confidence: result.confidence,
-          suggestions: result.suggestions
+          confidence: result.confidence || 0,
+          suggestions: result.suggestions || []
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to parse natural language')
