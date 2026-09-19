@@ -13,8 +13,10 @@ jest.mock('@/lib/prisma', () => ({
     label: {
       findMany: jest.fn(),
       create: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
   },
 }))
@@ -45,7 +47,7 @@ describe('app/api/labels', () => {
       const body = await response.json()
       expect(body).toEqual({
         error: 'Unauthorized',
-        message: 'You must be signed in',
+        message: 'You must be signed in to view labels',
       })
     })
 
@@ -59,6 +61,7 @@ describe('app/api/labels', () => {
           createdAt: new Date().toISOString(),
         },
       ])
+      ;(prisma.label.count as jest.Mock).mockResolvedValue(1)
 
       const request = new NextRequest('http://localhost:3000/api/labels')
       const response = await GET(request)
@@ -84,7 +87,7 @@ describe('app/api/labels', () => {
       const body = await response.json()
       expect(body).toEqual({
         error: 'Unauthorized',
-        message: 'You must be signed in',
+        message: 'You must be signed in to create labels',
       })
     })
 
@@ -114,19 +117,23 @@ describe('app/api/labels', () => {
 
   describe('PUT', () => {
     it('should update a label when authenticated', async () => {
+      ;(prisma.label.findUnique as jest.Mock).mockResolvedValue({
+        id: 'clx1234567890abcdef1234567890abcdef1234567890',
+        userId: 'user-1',
+      })
       ;(prisma.label.update as jest.Mock).mockResolvedValue({
-        id: 'label-1',
+        id: 'clx1234567890abcdef1234567890abcdef1234567890',
         name: 'Updated Label',
         color: '#ff0000',
         userId: 'user-1',
         createdAt: new Date().toISOString(),
       })
 
-      const request = new NextRequest('http://localhost:3000/api/labels/label-1', {
+      const request = new NextRequest('http://localhost:3000/api/labels/clx1234567890abcdef1234567890abcdef1234567890', {
         method: 'PUT',
         body: JSON.stringify({ name: 'Updated Label' }),
       })
-      const response = await PUT(request, { params: Promise.resolve({ id: 'label-1' }) })
+      const response = await PUT(request, { params: Promise.resolve({ id: 'clx1234567890abcdef1234567890abcdef1234567890' }) })
 
       expect(response.status).toBe(200)
       const body = await response.json()
@@ -136,12 +143,16 @@ describe('app/api/labels', () => {
 
   describe('DELETE', () => {
     it('should delete a label when authenticated', async () => {
+      ;(prisma.label.findUnique as jest.Mock).mockResolvedValue({
+        id: 'clx1234567890abcdef1234567890abcdef1234567890',
+        userId: 'user-1',
+      })
       ;(prisma.label.delete as jest.Mock).mockResolvedValue({})
 
-      const request = new NextRequest('http://localhost:3000/api/labels/label-1', {
+      const request = new NextRequest('http://localhost:3000/api/labels/clx1234567890abcdef1234567890abcdef1234567890', {
         method: 'DELETE',
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'label-1' }) })
+      const response = await DELETE(request, { params: Promise.resolve({ id: 'clx1234567890abcdef1234567890abcdef1234567890' }) })
 
       expect(response.status).toBe(200)
       const body = await response.json()
