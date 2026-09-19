@@ -5,14 +5,6 @@ export function cn(...classes: ClassValue[]) {
   return twMerge(clsx(classes))
 }
 
-export function formatTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  })
-}
-
 export function formatDate(date: Date | null | undefined): string {
   if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
     return 'Invalid Date'
@@ -24,7 +16,7 @@ export function formatDate(date: Date | null | undefined): string {
   })
 }
 
-export function formatTime(date: Date): string {
+export function formatTime(date: Date | null | undefined): string {
   if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
     return 'Invalid Date'
   }
