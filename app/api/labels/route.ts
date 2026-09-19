@@ -178,7 +178,7 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
       },
     })
 
-    return NextResponse.json({ updatedLabel })
+    return NextResponse.json({ label: updatedLabel })
   } catch (error) {
     console.error('Error updating label:', error)
     return NextResponse.json(
