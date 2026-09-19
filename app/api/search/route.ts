@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ results: { tasks: [], lists: [], labels: [] } })
     }
 
-    const results = await prisma.$transaction([
+    const [tasks, lists, labels] = await Promise.all([
       prisma.task.findMany({
         where: {
           userId,
@@ -62,8 +62,6 @@ export async function GET(request: NextRequest) {
         },
       }),
     ])
-
-    const [tasks, lists, labels] = results
 
     return NextResponse.json({ results: { tasks, lists, labels } })
   } catch (error) {
