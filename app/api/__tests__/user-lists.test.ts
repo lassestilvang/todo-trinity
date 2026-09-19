@@ -13,6 +13,7 @@ jest.mock('@/lib/prisma', () => ({
     list: {
       findMany: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
   },
 }))
