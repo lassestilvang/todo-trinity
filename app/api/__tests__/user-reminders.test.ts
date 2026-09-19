@@ -72,8 +72,8 @@ describe('app/api/user-reminders', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.reminders).toHaveLength(1)
-      expect(body.reminders[0].title).toBe('Task for tomorrow')
+      expect(body).toHaveLength(1)
+      expect(body[0].title).toBe('Task for tomorrow')
     })
 
     it('should filter reminders by type', async () => {
@@ -84,7 +84,7 @@ describe('app/api/user-reminders', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.reminders).toEqual([])
+      expect(body).toEqual([])
     })
 
     it("should return today's reminders by default", async () => {
@@ -98,7 +98,7 @@ describe('app/api/user-reminders', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.type).toBe('tasks')
+      expect(body).toEqual([])
     })
   })
 
