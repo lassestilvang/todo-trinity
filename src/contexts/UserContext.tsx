@@ -7,6 +7,7 @@ interface UserContextType {
   login: (user: User) => void
   logout: () => void
   loading: boolean
+  error?: string
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined)
@@ -28,7 +29,14 @@ function getInitialUser(): User | null {
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => getInitialUser())
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | undefined>(undefined)
+
+  useEffect(() => {
+    // Simulate initial loading state
+    const timer = setTimeout(() => setLoading(false), 0)
+    return () => clearTimeout(timer)
+  }, [])
 
   const login = async (userData: User) => {
     setUser(userData)
@@ -41,7 +49,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <UserContext.Provider value={{ user, login, logout, loading }}>
+    <UserContext.Provider value={{ user, login, logout, loading, error }}>
       {children}
     </UserContext.Provider>
   )
