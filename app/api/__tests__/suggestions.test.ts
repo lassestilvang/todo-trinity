@@ -104,8 +104,8 @@ describe('app/api/suggestions', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.title).toBe('Test task')
-      expect(body.priority).toBe('NORMAL')
+      expect(body.parsed.title).toBe('Test task')
+      expect(body.parsed.priority).toBe('NORMAL')
     })
 
     it('should return 400 when text is missing', async () => {
@@ -121,7 +121,7 @@ describe('app/api/suggestions', () => {
 
       expect(response.status).toBe(400)
       const body = await response.json()
-      expect(body.error).toBe('Invalid request')
+      expect(body.error).toBe('Validation failed')
     })
 
     it('should return 400 when parseNaturalLanguage returns null', async () => {
@@ -139,7 +139,7 @@ describe('app/api/suggestions', () => {
 
       expect(response.status).toBe(400)
       const body = await response.json()
-      expect(body.error).toBe('Invalid request')
+      expect(body.error).toBe('Could not parse')
     })
   })
 })
