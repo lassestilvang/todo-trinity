@@ -41,6 +41,7 @@ describe('app/api/auth', () => {
           action: 'signup',
           email: 'test@example.com',
           password: 'Password123',
+          confirmPassword: 'Password123',
           name: 'Test User',
         }),
       })
@@ -69,6 +70,7 @@ describe('app/api/auth', () => {
           action: 'signup',
           email: 'test@example.com',
           password: 'Password123',
+          confirmPassword: 'Password123',
           name: 'New User',
         }),
       })
