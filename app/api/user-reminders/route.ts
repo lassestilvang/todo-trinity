@@ -75,6 +75,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const validTypes = ['tasks', 'events', 'reminders', 'all']
+    if (!validTypes.includes(type)) {
+      return NextResponse.json(
+        { error: 'Invalid reminder type', message: `Type must be one of: ${validTypes.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
     // This endpoint just returns reminders based on the query
     const reminders = await prisma.task.findMany({
       where: {
