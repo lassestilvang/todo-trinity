@@ -13,8 +13,10 @@ jest.mock('@/lib/prisma', () => ({
     list: {
       findMany: jest.fn(),
       create: jest.fn(),
+      findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
     task: {
       count: jest.fn(),
@@ -48,7 +50,7 @@ describe('app/api/lists', () => {
       const body = await response.json()
       expect(body).toEqual({
         error: 'Unauthorized',
-        message: 'You must be signed in',
+        message: 'You must be signed in to view lists',
       })
     })
 
@@ -103,23 +105,27 @@ describe('app/api/lists', () => {
     })
 
     it('should update a list when authenticated', async () => {
+      ;(prisma.list.findUnique as jest.Mock).mockResolvedValue({
+        id: 'clx1234567890abcdef1234567890abcdef1234567890',
+        userId: 'user-1',
+      })
       ;(prisma.list.update as jest.Mock).mockResolvedValue({
-        id: 'list-1',
+        id: 'clx1234567890abcdef1234567890abcdef1234567890',
         name: 'Updated List',
         userId: 'user-1',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
 
-      const request = new NextRequest('http://localhost:3000/api/lists/list-1', {
+      const request = new NextRequest('http://localhost:3000/api/lists/clx1234567890abcdef1234567890abcdef1234567890', {
         method: 'PUT',
         body: JSON.stringify({ name: 'Updated List' }),
       })
-      const response = await PUT(request, { params: Promise.resolve({ id: 'list-1' }) })
+      const response = await PUT(request, { params: Promise.resolve({ id: 'clx1234567890abcdef1234567890abcdef1234567890' }) })
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.list.name).toBe('Updated List')
+      expect(body.updatedList.name).toBe('Updated List')
     })
   })
 
@@ -141,12 +147,16 @@ describe('app/api/lists', () => {
     })
 
     it('should delete a list when authenticated', async () => {
+      ;(prisma.list.findUnique as jest.Mock).mockResolvedValue({
+        id: 'clx1234567890abcdef1234567890abcdef1234567890',
+        userId: 'user-1',
+      })
       ;(prisma.list.delete as jest.Mock).mockResolvedValue({})
 
-      const request = new NextRequest('http://localhost:3000/api/lists/list-1', {
+      const request = new NextRequest('http://localhost:3000/api/lists/clx1234567890abcdef1234567890abcdef1234567890', {
         method: 'DELETE',
       })
-      const response = await DELETE(request, { params: Promise.resolve({ id: 'list-1' }) })
+      const response = await DELETE(request, { params: Promise.resolve({ id: 'clx1234567890abcdef1234567890abcdef1234567890' }) })
 
       expect(response.status).toBe(200)
       const body = await response.json()
