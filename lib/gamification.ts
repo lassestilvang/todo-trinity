@@ -54,7 +54,7 @@ const calculateXpRequired = (level: number): number => {
   return Math.round(100 * Math.pow(1.5, level - 1))
 }
 
-export async function getUserGamification(userId: string): Promise<StreakInfo> {
+export async function getUserGamification(userId: string): Promise<Partial<StreakInfo>> {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -88,30 +88,48 @@ export async function getUserGamification(userId: string): Promise<StreakInfo> {
     return completed >= yesterday && completed < today
   }).length
 
-  let currentStreak = 0
-  if (completedToday > 0) {
-    currentStreak = 1
-    if (completedYesterday > 0) {
-      currentStreak = 2
-      let checkDate = new Date(yesterday)
-      while (true) {
-        const prevDate = new Date(checkDate)
-        prevDate.setDate(prevDate.getDate() - 1)
-        const prevDayTasks = tasks.filter(t => {
-          const completed = new Date(t.completedAt!)
-          return completed >= prevDate && completed < checkDate
-        })
-        if (prevDayTasks.length > 0) {
-          currentStreak++
-          checkDate = prevDate
-        } else {
-          break
-        }
+  const calculateStreaks = () => {
+    let currentStreak = 0
+    let longestStreak = 0
+    let lastDate: Date | null = null
+    for (const task of tasks) {
+      const taskDate = new Date(task.completedAt!)
+      taskDate.setHours(0, 0, 0, 0)
+      if (!lastDate || (taskDate.getTime() === lastDate.getTime() + 86400000)) {
+        currentStreak++
+        longestStreak = Math.max(longestStreak, currentStreak)
+      } else if (taskDate.getTime() !== lastDate.getTime()) {
+        currentStreak = 1
+      }
+      lastDate = taskDate
+    }
+    return { currentStreak, longestStreak }
+  }
+
+  const { currentStreak, longestStreak } = calculateStreaks()
+
+  let streak = currentStreak
+  let checkDate = yesterday
+  let streakChecked = completedYesterday > 0
+  if (streakChecked) {
+    for (let i = 0; i < 30 && streakChecked; i++) {
+      const prevDate = new Date(checkDate)
+      prevDate.setDate(prevDate.getDate() - 1)
+      const prevDayTasks = tasks.filter(t => {
+        const completed = new Date(t.completedAt!)
+        return completed >= prevDate && completed < checkDate
+      })
+      if (prevDayTasks.length > 0) {
+        streak++
+        checkDate = prevDate
+        streakChecked = true
+      } else {
+        streakChecked = false
       }
     }
   }
 
-  let longestStreak = 0
+  let longestStreakCalculated = 0
   let tempStreak = 0
   let lastDate: Date | null = null
   for (const task of tasks) {
@@ -119,21 +137,16 @@ export async function getUserGamification(userId: string): Promise<StreakInfo> {
     taskDate.setHours(0, 0, 0, 0)
     if (!lastDate || (taskDate.getTime() === lastDate.getTime() + 86400000)) {
       tempStreak++
-      longestStreak = Math.max(longestStreak, tempStreak)
+      longestStreakCalculated = Math.max(longestStreakCalculated, tempStreak)
     } else if (taskDate.getTime() !== lastDate.getTime()) {
       tempStreak = 1
     }
     lastDate = taskDate
   }
 
-  const todayTaskCount = tasks.filter(t => {
-    const completed = new Date(t.completedAt!)
-    return completed >= today
-  }).length
-
   const badges: Badge[] = []
 
-  if (currentStreak >= 3) {
+  if (streak >= 3) {
     badges.push({
       id: 'streak_3',
       name: 'Getting Started',
@@ -143,7 +156,7 @@ export async function getUserGamification(userId: string): Promise<StreakInfo> {
     })
   }
 
-  if (currentStreak >= 7) {
+  if (streak >= 7) {
     badges.push({
       id: 'streak_7',
       name: 'Weekly Warrior',
@@ -153,7 +166,7 @@ export async function getUserGamification(userId: string): Promise<StreakInfo> {
     })
   }
 
-  if (currentStreak >= 30) {
+  if (streak >= 30) {
     badges.push({
       id: 'streak_30',
       name: 'Monthly Master',
@@ -165,24 +178,21 @@ export async function getUserGamification(userId: string): Promise<StreakInfo> {
 
   const totalCompleted = tasks.length
 
-  // Calculate points based on tasks completed
-  const totalPoints = totalCompleted * 10 // 10 points per task
-  let currentLevel = 1
-  let xpInCurrentLevel = 0
-  let levelXpRequired = 100
-
-  // Calculate level from total points
-  let tempXp = totalPoints
+  const totalPoints = totalCompleted * 10
   let level = 1
-  while (tempXp >= calculateXpRequired(level)) {
-    tempXp -= calculateXpRequired(level)
-    level++
+  let xpInCurrentLevel = 0
+  let levelXpRequired = calculateXpRequired(level)
+
+  let tempXp = totalPoints
+  let currentLevel = 1
+  while (tempXp >= calculateXpRequired(currentLevel)) {
+    tempXp -= calculateXpRequired(currentLevel)
+    currentLevel++
   }
-  currentLevel = level
+  level = currentLevel
   xpInCurrentLevel = tempXp
   levelXpRequired = calculateXpRequired(level)
 
-  // Get achievements (mock for now - will be replaced with DB)
   const achievements: UserAchievement[] = [
     {
       id: 'first_task',
@@ -214,8 +224,8 @@ export async function getUserGamification(userId: string): Promise<StreakInfo> {
       category: 'STREAK',
       points: 25,
       rarity: 'COMMON',
-      isUnlocked: currentStreak >= 3,
-      progress: currentStreak >= 3 ? 100 : (currentStreak / 3) * 100,
+      isUnlocked: streak >= 3,
+      progress: streak >= 3 ? 100 : (streak / 3) * 100,
     },
     {
       id: 'weekly_warrior',
@@ -225,93 +235,35 @@ export async function getUserGamification(userId: string): Promise<StreakInfo> {
       category: 'STREAK',
       points: 50,
       rarity: 'UNCOMMON',
-      isUnlocked: currentStreak >= 7,
-      progress: currentStreak >= 7 ? 100 : (currentStreak / 7) * 100,
-    },
-    {
-      id: 'monthly_master',
-      name: 'Monthly Master',
-      description: '30-day streak',
-      icon: '🏆',
-      category: 'STREAK',
-      points: 100,
-      rarity: 'RARE',
-      isUnlocked: currentStreak >= 30,
-      progress: currentStreak >= 30 ? 100 : (currentStreak / 30) * 100,
-    },
-    {
-      id: 'century_club',
-      name: 'Century Club',
-      description: 'Complete 100 tasks',
-      icon: '💯',
-      category: 'PRODUCTIVITY',
-      points: 100,
-      rarity: 'EPIC',
-      isUnlocked: totalCompleted >= 100,
-      progress: totalCompleted >= 100 ? 100 : (totalCompleted / 100) * 100,
+      isUnlocked: streak >= 7,
+      progress: streak >= 7 ? 100 : (streak / 7) * 100,
     },
   ]
 
-  const points: UserPoints = {
-    totalPoints,
-    level: currentLevel,
-    currentLevelXp: xpInCurrentLevel,
-    levelXpRequired,
-  }
-
-  const levelData: UserLevel = {
-    level: currentLevel,
-    xp: xpInCurrentLevel,
-    xpToNextLevel: levelXpRequired,
-  }
-
   return {
-    currentStreak,
-    longestStreak,
-    lastActiveDate: tasks[0]?.completedAt?.toISOString() || null,
+    currentStreak: streak,
+    longestStreak: longestStreakCalculated,
+    lastActiveDate: tasks[0] ? new Date(tasks[0].completedAt!).toISOString() : null,
     totalTasksCompleted: totalCompleted,
     dailyGoal: 5,
-    dailyGoalProgress: todayTaskCount,
+    dailyGoalProgress: completedToday,
     badges: badges.map(b => b.name),
-    points,
+    points: {
+      totalPoints,
+      level: level,
+      currentLevelXp: xpInCurrentLevel,
+      levelXpRequired: levelXpRequired,
+    },
     achievements,
-    level: levelData,
+    level: {
+      level: level,
+      xp: xpInCurrentLevel,
+      xpToNextLevel: levelXpRequired - xpInCurrentLevel,
+    },
   }
 }
 
 export async function checkAndAwardBadges(userId: string): Promise<Badge[]> {
   const gamification = await getUserGamification(userId)
-  const newBadges: Badge[] = []
-
-  if (gamification.currentStreak >= 3 && !gamification.badges.includes('Getting Started')) {
-    newBadges.push({
-      id: 'streak_3',
-      name: 'Getting Started',
-      description: '3-day streak',
-      icon: '🔥',
-      unlockedAt: new Date(),
-    })
-  }
-
-  if (gamification.currentStreak >= 7 && !gamification.badges.includes('Weekly Warrior')) {
-    newBadges.push({
-      id: 'streak_7',
-      name: 'Weekly Warrior',
-      description: '7-day streak',
-      icon: '⭐',
-      unlockedAt: new Date(),
-    })
-  }
-
-  if (gamification.currentStreak >= 30 && !gamification.badges.includes('Monthly Master')) {
-    newBadges.push({
-      id: 'streak_30',
-      name: 'Monthly Master',
-      description: '30-day streak',
-      icon: '🏆',
-      unlockedAt: new Date(),
-    })
-  }
-
-  return newBadges
+  return (gamification as any).badges || []
 }
