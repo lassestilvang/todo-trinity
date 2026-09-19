@@ -37,7 +37,7 @@ export default function TaskItem({ task, onStatusChange, onPriorityChange, onDel
   const [showComments, setShowComments] = useState(false)
   const [showSubtasks, setShowSubtasks] = useState(false)
 
-  const { subtasks, createSubTask, updateSubTask, deleteSubTask, isCreating } = useSubTasks(task.id)
+  const { subtasks, createSubTask, updateSubTask, deleteSubTask } = useSubTasks(task.id)
   const { dependencies, createDependency, deleteDependency } = useTaskDependencies(task.id)
 
   const handleSubTaskCreate = () => {
