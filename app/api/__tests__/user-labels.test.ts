@@ -13,6 +13,9 @@ jest.mock('@/lib/prisma', () => ({
     label: {
       findMany: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     },
   },
 }))
@@ -50,7 +53,7 @@ describe('app/api/user-labels', () => {
     it('should return user labels when authenticated', async () => {
       ;(prisma.label.findMany as jest.Mock).mockResolvedValue([
         {
-          id: 'label-1',
+          id: 'clx1234567890abcdef1234567890abcdef1234567890',
           name: 'Work',
           color: '#ff0000',
           userId: 'user-1',
