@@ -22,7 +22,11 @@ const recentEvents: Array<{
   conflictId?: string
 }> = []
 
-const MAX_EVENTS = 100
+const MAX_EVENTS = 50
+
+export function clearRecentEvents(): void {
+  recentEvents.length = 0
+}
 
 // User presence tracking
 const userPresence: Map<string, {
