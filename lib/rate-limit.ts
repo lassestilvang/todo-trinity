@@ -57,3 +57,6 @@ export function rateLimit(options: RateLimitOptions = {}) {
 
   return checkRateLimit
 }
+
+// Export rateLimitStore for testing
+export { rateLimitStore }
