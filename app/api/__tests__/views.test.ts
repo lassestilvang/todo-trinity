@@ -12,9 +12,13 @@ jest.mock('@/lib/prisma', () => ({
   prisma: {
     view: {
       findMany: jest.fn(),
+      findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+    },
+    task: {
+      findMany: jest.fn(),
     },
   },
 }))
@@ -50,14 +54,11 @@ describe('app/api/views', () => {
     })
 
     it('should return views when authenticated', async () => {
-      ;(prisma.view.findMany as jest.Mock).mockResolvedValue([
+      ;(prisma.task.findMany as jest.Mock).mockResolvedValue([
         {
-          id: 'view-1',
-          name: 'Work View',
-          filters: { status: 'TODO' },
+          id: 'task-1',
+          title: 'Task 1',
           userId: 'user-1',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         },
       ])
 
@@ -66,8 +67,8 @@ describe('app/api/views', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.views).toHaveLength(1)
-      expect(body.views[0].name).toBe('Work View')
+      expect(body).toHaveLength(1)
+      expect(body[0].title).toBe('Task 1')
     })
   })
 
