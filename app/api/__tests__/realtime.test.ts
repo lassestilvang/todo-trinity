@@ -10,9 +10,11 @@ import { NextRequest } from 'next/server'
 // Mock realtime
 jest.mock('@/lib/realtime', () => ({
   getRecentEvents: jest.fn(),
+  getUserPresence: jest.fn(),
+  updateUserPresence: jest.fn(),
 }))
 
-import { getRecentEvents } from '@/lib/realtime'
+import { getRecentEvents, getUserPresence } from '@/lib/realtime'
 
 describe('app/api/realtime', () => {
   const mockSession = {
@@ -44,6 +46,7 @@ describe('app/api/realtime', () => {
 
     it('should return SSE stream when authenticated', async () => {
       ;(getRecentEvents as jest.Mock).mockReturnValue([])
+      ;(getUserPresence as jest.Mock).mockReturnValue([])
 
       const request = new NextRequest('http://localhost:3000/api/realtime')
       const response = await GET(request)
@@ -64,6 +67,7 @@ describe('app/api/realtime', () => {
         },
       ]
       ;(getRecentEvents as jest.Mock).mockReturnValue(mockEvents)
+      ;(getUserPresence as jest.Mock).mockReturnValue([])
 
       const request = new NextRequest('http://localhost:3000/api/realtime?since=1234567890')
       const response = await GET(request)
@@ -75,6 +79,9 @@ describe('app/api/realtime', () => {
 
     it('should handle errors gracefully', async () => {
       ;(getRecentEvents as jest.Mock).mockImplementation(() => {
+        throw new Error('Test error')
+      })
+      ;(getUserPresence as jest.Mock).mockImplementation(() => {
         throw new Error('Test error')
       })
 
