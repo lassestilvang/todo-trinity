@@ -47,37 +47,18 @@ describe('app/api/users', () => {
       })
     })
 
-    it('should return current user when authenticated', async () => {
-      ;(prisma.user.findUnique as jest.Mock).mockResolvedValue({
-        id: 'user-1',
-        email: 'test@test.com',
-        name: 'Test User',
-        image: '/test.png',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-
-      const request = new NextRequest('http://localhost:3000/api/users')
-      const response = await GET(request)
-
-      expect(response.status).toBe(200)
-      const body = await response.json()
-      expect(body.user).toBeDefined()
-      expect(body.user.id).toBe('user-1')
-      expect(body.user.email).toBe('test@test.com')
-    })
-
-    it('should return all users when admin', async () => {
+    it('should return all users when authenticated', async () => {
       ;(prisma.user.findMany as jest.Mock).mockResolvedValue([
         {
           id: 'user-1',
-          email: 'test1@test.com',
-          name: 'User 1',
-        },
-        {
-          id: 'user-2',
-          email: 'test2@test.com',
-          name: 'User 2',
+          email: 'test@test.com',
+          name: 'Test User',
+          image: '/test.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          tasks: [],
+          lists: [],
+          labels: [],
         },
       ])
 
@@ -86,7 +67,34 @@ describe('app/api/users', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.users).toHaveLength(2)
+      expect(body.users).toHaveLength(1)
+      expect(body.users[0].id).toBe('user-1')
+      expect(body.users[0].email).toBe('test@test.com')
+    })
+
+    it('should return filtered users when id matches userId', async () => {
+      ;(prisma.user.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'user-1',
+          email: 'test@test.com',
+          name: 'Test User',
+          image: '/test.png',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          tasks: [],
+          lists: [],
+          labels: [],
+        },
+      ])
+
+      const request = new NextRequest('http://localhost:3000/api/users?id=user-1')
+      const response = await GET(request)
+
+      expect(response.status).toBe(200)
+      const body = await response.json()
+      expect(body.users).toHaveLength(1)
+      expect(body.users[0].id).toBe('user-1')
+      expect(body.users[0].email).toBe('test@test.com')
     })
   })
 })
