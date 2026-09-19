@@ -41,7 +41,7 @@ describe('lib/auth-middleware', () => {
         user: {},
       })
 
-      await expect(verifyAuth({} as Request)).rejects.toThrow('UnmountedAuthError: Unauthorized')
+      await expect(verifyAuth({} as Request)).rejects.toThrow('Unauthorized')
     })
   })
 
