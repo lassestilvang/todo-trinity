@@ -73,13 +73,13 @@ describe('app/api/search', () => {
       ;(prisma.list.findMany as jest.Mock).mockResolvedValue([])
       ;(prisma.label.findMany as jest.Mock).mockResolvedValue([])
 
-      const request = new NextRequest('http://localhost:3000/api/search?q=test')
+      const request = new NextRequest('http://localhost:3000/api/search?query=test')
       const response = await GET(request)
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.results).toHaveLength(1)
-      expect(body.results[0].title).toBe('Test Task')
+      expect(body.results.tasks).toHaveLength(1)
+      expect(body.results.tasks[0].title).toBe('Test Task')
     })
 
     it('should handle empty query', async () => {
@@ -88,13 +88,13 @@ describe('app/api/search', () => {
 
       expect(response.status).toBe(200)
       const body = await response.json()
-      expect(body.results).toEqual([])
+      expect(body.results).toEqual({ tasks: [], lists: [], labels: [] })
     })
 
     it('should handle errors gracefully', async () => {
       ;(prisma.task.findMany as jest.Mock).mockRejectedValue(new Error('Database error'))
 
-      const request = new NextRequest('http://localhost:3000/api/search?q=test')
+      const request = new NextRequest('http://localhost:3000/api/search?query=test')
       const response = await GET(request)
 
       expect(response.status).toBe(500)
