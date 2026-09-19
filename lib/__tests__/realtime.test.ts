@@ -3,19 +3,30 @@ import {
   broadcastTaskUpdate,
   broadcastTaskDelete,
   getRecentEvents,
+  clearRecentEvents,
 } from '@/lib/realtime'
 import type { Task } from '@/src/types/index'
 
 describe('lib/realtime', () => {
   // Mock crypto.randomUUID for predictable IDs
   beforeEach(() => {
-    jest.spyOn(global as any, 'crypto', 'get').mockReturnValue({
-      randomUUID: jest.fn().mockReturnValue('test-uuid'),
+    // Mock crypto.randomUUID
+    const originalRandomUUID = crypto.randomUUID
+    Object.defineProperty(global, 'crypto', {
+      value: {
+        ...originalRandomUUID,
+        randomUUID: jest.fn().mockReturnValue('test-uuid'),
+      },
+      writable: true,
     })
+    // Clear events before each test
+    clearRecentEvents()
   })
 
   afterEach(() => {
     jest.restoreAllMocks()
+    // Clear events after each test
+    clearRecentEvents()
   })
 
   const mockTask: Task = {
@@ -112,26 +123,19 @@ describe('lib/realtime', () => {
       const recentTime = Date.now() - 1000 // 1 second ago
 
       // Manually add events with specific timestamps
-      // @ts-ignore - accessing internal array for test setup
-      recentEvents.push({
-        id: 'old-event',
-        type: 'task_created',
-        task: { ...mockTask, id: 'old-task' },
-        timestamp: oldTime,
-      })
+      broadcastTaskCreate({ ...mockTask, id: 'old-task' })
+      // Override the timestamp of the last event
+      const events = getRecentEvents()
+      events[events.length - 1].timestamp = oldTime
 
-      // @ts-ignore - accessing internal array for test setup
-      recentEvents.push({
-        id: 'recent-event',
-        type: 'task_created',
-        task: { ...mockTask, id: 'recent-task' },
-        timestamp: recentTime,
-      })
+      broadcastTaskCreate({ ...mockTask, id: 'recent-task' })
+      const recentEvents = getRecentEvents()
+      recentEvents[recentEvents.length - 1].timestamp = recentTime
 
       // Get events from 5 seconds ago - should only get recent event
-      const events = getRecentEvents(Date.now() - 5000)
-      expect(events).toHaveLength(1)
-      expect(events[0].id).toBe('recent-event')
+      const filteredEvents = getRecentEvents(Date.now() - 5000)
+      expect(filteredEvents).toHaveLength(1)
+      expect(filteredEvents[0].task?.id).toBe('recent-task')
     })
 
     it('should return all events when since is 0', () => {
