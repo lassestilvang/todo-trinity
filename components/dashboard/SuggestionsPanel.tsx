@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTaskContext } from '@/src/contexts'
 import { useSuggestions } from '@/src/hooks/useSuggestions'
 import { useToast } from '@/src/hooks/useToast'
+import { useQuery } from '@tanstack/react-query'
 
 export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
   const { parseNaturalLanguage, isParsing, error } = useSuggestions()
@@ -12,10 +13,23 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
 
   const [input, setInput] = useState('')
   const [showParser, setShowParser] = useState(false)
-  const [proactiveSuggestions, setProactiveSuggestions] = useState<any[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [parsedResult, setParsedResult] = useState<any>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+
+  // Fetch suggestions on mount
+  const { data: suggestions, isLoading, isError } = useQuery<any[]>({
+    queryKey: ['task-suggestions'],
+    queryFn: async () => {
+      const res = await fetch('/api/ai/suggestions', {
+        cache: 'no-store',
+      })
+      if (!res.ok) throw new Error('Failed to fetch suggestions')
+      const data = await res.json()
+      return (data.suggestions || []) as any[]
+    },
+    enabled: typeof window !== 'undefined',
+  })
 
   const handleSubmit = async () => {
     if (!input.trim()) return
@@ -55,9 +69,13 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
 
         <div className="p-6 space-y-6">
           {/* Quick Suggestions */}
-          {proactiveSuggestions.length > 0 && (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          ) : suggestions && suggestions.length > 0 ? (
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {proactiveSuggestions.slice(0, 5).map((suggestion: any, index: number) => (
+              {suggestions.slice(0, 5).map((suggestion: any, index: number) => (
                 <div
                   key={index}
                   className={`
@@ -81,9 +99,7 @@ export default function SuggestionsPanel({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
             </div>
-          )}
-
-          {proactiveSuggestions.length === 0 && !isAnalyzing && (
+          ) : (
             <p className="text-gray-500 text-sm text-center py-8">
               No suggestions available
             </p>
