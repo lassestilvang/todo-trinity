@@ -29,6 +29,7 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
   const [decomposedTask, setDecomposedTask] = useState<DecompositionResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [useAI, setUseAI] = useState(false)
 
   const handleDecompose = async () => {
     if (!inputText.trim()) return
@@ -37,10 +38,26 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
     setError(null)
 
     try {
-      // In production, this would call an AI service
-      // For now, we'll simulate AI decomposition
-      const result = await simulateAIDecomposition(inputText)
-      setDecomposedTask(result)
+      if (useAI) {
+        // Call the AI decomposition API
+        const res = await fetch('/api/ai/decompose', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: inputText })
+        })
+
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.message || 'Failed to decompose task')
+        }
+
+        const data = await res.json()
+        setDecomposedTask(data.decomposition)
+      } else {
+        // Use local simulation
+        const result = await simulateAIDecomposition(inputText)
+        setDecomposedTask(result)
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to decompose task')
       addToast('Failed to decompose task', 'error')
@@ -211,6 +228,18 @@ export default function AITaskDecomposer({ onClose }: { onClose: () => void }) {
                   <p className="text-xs text-gray-500">
                     Examples: &quot;Write a blog post about React hooks&quot;, &quot;Prepare Q3 budget presentation&quot;, &quot;Set up new employee onboarding&quot;
                   </p>
+                  <div className="mt-2 flex items-center space-x-2">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useAI}
+                        onChange={(e) => setUseAI(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-purple-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                      <span className="ml-2 text-xs text-gray-600">Use AI backend</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
