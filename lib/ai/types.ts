@@ -118,3 +118,38 @@ export interface HistoricalPattern {
 export interface SimilarTask extends Partial<Task> {
   similarityScore: number
 }
+
+// Task Decomposition types
+export interface DecomposedSubTask {
+  title: string
+  description?: string
+  estimatedMinutes: number
+  priority: Priority
+}
+
+export interface DecompositionResult {
+  title: string
+  description?: string
+  estimatedMinutes: number
+  subtasks: DecomposedSubTask[]
+  suggestedPriority: Priority
+  confidence: number
+}
+
+// Contextual Suggestions types
+export interface ContextualSuggestion {
+  id: string
+  type: 'similar_task' | 'related_task' | 'time_optimal' | 'dependency' | 'pattern_match'
+  title: string
+  description: string
+  confidence: number
+  suggestedAction: string
+  relatedTaskIds: string[]
+  metadata?: Record<string, any>
+}
+
+export interface ContextualSuggestionsResult {
+  suggestions: ContextualSuggestion[]
+  basedOnTasks: string[]
+  generatedAt: string
+}
