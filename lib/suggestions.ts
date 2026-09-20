@@ -119,11 +119,11 @@ export class EnhancedNLPParser {
 }
 
 export async function getTaskSuggestions(userId: string): Promise<any[]> {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { prisma } = require('@/lib/prisma')
+  // Use import instead of require for better type support
+  const { prisma } = await import('@/lib/prisma')
 
   const tasks = await prisma.task.findMany({
-    where: { userId, status: 'pending' },
+    where: { userId, status: { not: 'COMPLETED' } },
     include: { list: true, labels: true },
     orderBy: { createdAt: 'desc' },
   })
