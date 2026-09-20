@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { TaskStatus, Priority, Notification } from '@/src/types/index'
-import { Zap } from 'lucide-react'
+import { Zap, Menu, X } from 'lucide-react'
 import { useTaskContext } from '@/src/contexts'
 import { useUser } from '@/src/contexts'
 import WorkspacePresence from '@/components/workspace/WorkspacePresence'
@@ -30,12 +30,15 @@ import ConflictDetectionPanel from '@/components/dashboard/ConflictDetectionPane
 import CollaborationPanel from '@/components/dashboard/CollaborationPanel'
 import WorkflowBuilder from '@/components/automation/WorkflowBuilder'
 import AutomationPanel from '@/components/automation/AutomationPanel'
+import MobileBottomNav from '@/components/dashboard/MobileBottomNav'
+import DailyPlanner from '@/components/dashboard/DailyPlanner'
 
 export default function DashboardContent() {
   const taskContext = useTaskContext()
   const notificationsContext = useNotifications()
-  const [activeView, setActiveView] = useState('tasks')
   const { workspaces, currentWorkspace } = useWorkspaceContext()
+  const [activeView, setActiveView] = useState('tasks')
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [showActivity, setShowActivity] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [showGamification, setShowGamification] = useState(false)
@@ -47,6 +50,7 @@ export default function DashboardContent() {
   const [showMentions, setShowMentions] = useState(false)
   const [showProductivityAnalytics, setShowProductivityAnalytics] = useState(false)
   const [showAITaskDecomposer, setShowAITaskDecomposer] = useState(false)
+  const [showDailyPlanner, setShowDailyPlanner] = useState(false)
   const [showAIPrioritySuggestions, setShowAIPrioritySuggestions] = useState(false)
   const [showConflictDetection, setShowConflictDetection] = useState(false)
   const [showCollaboration, setShowCollaboration] = useState(false)
@@ -115,124 +119,160 @@ export default function DashboardContent() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden pb-20 md:pb-0">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 p-4">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setActiveView('tasks')}
-                className={`px-4 py-2 rounded ${activeView === 'tasks' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Tasks
-              </button>
-              <button
-                onClick={() => setActiveView('calendar')}
-                className={`px-4 py-2 rounded ${activeView === 'calendar' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Calendar
-              </button>
-              <button
-                onClick={() => setActiveView('gantt')}
-                className={`px-4 py-2 rounded ${activeView === 'gantt' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Gantt
-              </button>
-              <button
-                onClick={() => setActiveView('kanban')}
-                className={`px-4 py-2 rounded ${activeView === 'kanban' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Kanban
-              </button>
-              <button
-                onClick={() => setShowSuggestions(!showSuggestions)}
-                className={`px-4 py-2 rounded ${showSuggestions ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Suggestions
-              </button>
-              <button
-                onClick={() => setShowGamification(!showGamification)}
-                className={`px-4 py-2 rounded ${showGamification ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Gamification
-              </button>
-              <button
-                onClick={() => setShowAIPrioritySuggestions(!showAIPrioritySuggestions)}
-                className={`px-4 py-2 rounded ${showAIPrioritySuggestions ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                AI Suggestions
-              </button>
-              <button
-                onClick={() => setShowConflictDetection(!showConflictDetection)}
-                className={`px-4 py-2 rounded ${showConflictDetection ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Schedule Check
-              </button>
-              <button
-                onClick={() => setShowCollaboration(!showCollaboration)}
-                className={`px-4 py-2 rounded ${showCollaboration ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Collaborate
-              </button>
-              <button
-                onClick={() => setShowAutomationPanel(!showAutomationPanel)}
-                className={`px-4 py-2 rounded ${showAutomationPanel ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Automation
-              </button>
-              <button
-                onClick={() => setShowActivity(!showActivity)}
-                className={`px-4 py-2 rounded ${showActivity ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Activity
-              </button>
-              <button
-                onClick={() => setShowFocusMode(!showFocusMode)}
-                className={`px-4 py-2 rounded ${showFocusMode ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Focus
-              </button>
-              <button
-                onClick={() => setShowSearch(!showSearch)}
-                className={`px-4 py-2 rounded ${showSearch ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Search
-              </button>
-              {currentWorkspace && (
-                <WorkspacePresence workspaceId={currentWorkspace.id} />
-              )}
-              <RealtimeStatus workspaceId={currentWorkspace?.id} />
-              <button
-                onClick={() => setShowMentions(!showMentions)}
-                className={`px-4 py-2 rounded ${showMentions ? 'bg-yellow-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Mentions ({notificationsContext.notifications.filter((n: Notification) => !n.read).length})
-              </button>
-              <button
-                onClick={() => setActiveView('analytics')}
-                className={`px-4 py-2 rounded ${activeView === 'analytics' ? 'bg-teal-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Analytics
-              </button>
-              <button
-                onClick={() => setShowProductivityAnalytics(!showProductivityAnalytics)}
-                className={`px-4 py-2 rounded ${showProductivityAnalytics ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Insights & Analytics
-              </button>
-              <button
-                onClick={() => setShowAITaskDecomposer(!showAITaskDecomposer)}
-                className={`px-4 py-2 rounded ${showAITaskDecomposer ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                AI Decompose
-              </button>
-              <button
-                onClick={() => setActiveView('notifications')}
-                className={`px-4 py-2 rounded ${activeView === 'notifications' ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-700'}`}
-              >
-                Notifications ({notificationsContext.notifications.length})
-              </button>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+              className="md:hidden p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100"
+              aria-label="Open menu"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+
+            {/* Desktop Header Actions */}
+            <div className="hidden md:flex md:items-center md:space-x-2">
+              {/* Primary View Buttons */}
+              <div className="flex space-x-1 border-r border-gray-200 pr-4 mr-4">
+                <button
+                  onClick={() => setActiveView('tasks')}
+                  className={`px-3 py-1.5 rounded ${activeView === 'tasks' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Tasks
+                </button>
+                <button
+                  onClick={() => setActiveView('calendar')}
+                  className={`px-3 py-1.5 rounded ${activeView === 'calendar' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Calendar
+                </button>
+                <button
+                  onClick={() => setActiveView('kanban')}
+                  className={`px-3 py-1.5 rounded ${activeView === 'kanban' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Kanban
+                </button>
+                <button
+                  onClick={() => setActiveView('gantt')}
+                  className={`px-3 py-1.5 rounded ${activeView === 'gantt' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Gantt
+                </button>
+              </div>
+
+              {/* Quick Action Buttons */}
+              <div className="flex space-x-1 border-r border-gray-200 pr-4 mr-4">
+                <button
+                  onClick={() => setShowSuggestions(!showSuggestions)}
+                  className={`px-3 py-1.5 rounded ${showSuggestions ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Suggestions
+                </button>
+                <button
+                  onClick={() => setShowGamification(!showGamification)}
+                  className={`px-3 py-1.5 rounded ${showGamification ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Gamification
+                </button>
+                <button
+                  onClick={() => setShowAIPrioritySuggestions(!showAIPrioritySuggestions)}
+                  className={`px-3 py-1.5 rounded ${showAIPrioritySuggestions ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  AI Suggestions
+                </button>
+                <button
+                  onClick={() => setShowConflictDetection(!showConflictDetection)}
+                  className={`px-3 py-1.5 rounded ${showConflictDetection ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Schedule Check
+                </button>
+              </div>
+
+              {/* Collaboration & Tools */}
+              <div className="flex space-x-1 border-r border-gray-200 pr-4 mr-4">
+                <button
+                  onClick={() => setShowCollaboration(!showCollaboration)}
+                  className={`px-3 py-1.5 rounded ${showCollaboration ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Collaborate
+                </button>
+                <button
+                  onClick={() => setShowAutomationPanel(!showAutomationPanel)}
+                  className={`px-3 py-1.5 rounded ${showAutomationPanel ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Automation
+                </button>
+                <button
+                  onClick={() => setShowActivity(!showActivity)}
+                  className={`px-3 py-1.5 rounded ${showActivity ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Activity
+                </button>
+              </div>
+
+              {/* Focus & Search */}
+              <div className="flex space-x-1 border-r border-gray-200 pr-4 mr-4">
+                <button
+                  onClick={() => setShowFocusMode(!showFocusMode)}
+                  className={`px-3 py-1.5 rounded ${showFocusMode ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Focus
+                </button>
+                <button
+                  onClick={() => setShowSearch(!showSearch)}
+                  className={`px-3 py-1.5 rounded ${showSearch ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Search
+                </button>
+              </div>
+
+              {/* Workspace & Notifications */}
+              <div className="flex items-center space-x-2">
+                {currentWorkspace && (
+                  <WorkspacePresence workspaceId={currentWorkspace.id} />
+                )}
+                <RealtimeStatus workspaceId={currentWorkspace?.id} />
+                <button
+                  onClick={() => setShowMentions(!showMentions)}
+                  className={`px-3 py-1.5 rounded ${showMentions ? 'bg-yellow-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Mentions ({notificationsContext.notifications.filter((n: Notification) => !n.read).length})
+                </button>
+                <button
+                  onClick={() => setActiveView('analytics')}
+                  className={`px-3 py-1.5 rounded ${activeView === 'analytics' ? 'bg-teal-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Analytics
+                </button>
+                <button
+                  onClick={() => setShowProductivityAnalytics(!showProductivityAnalytics)}
+                  className={`px-3 py-1.5 rounded ${showProductivityAnalytics ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Insights
+                </button>
+                <button
+                  onClick={() => setShowAITaskDecomposer(!showAITaskDecomposer)}
+                  className={`px-3 py-1.5 rounded ${showAITaskDecomposer ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  AI Decompose
+                </button>
+                <button
+                  onClick={() => setShowDailyPlanner(!showDailyPlanner)}
+                  className={`px-3 py-1.5 rounded ${showDailyPlanner ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Daily Plan
+                </button>
+                <button
+                  onClick={() => setActiveView('notifications')}
+                  className={`px-3 py-1.5 rounded ${activeView === 'notifications' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Notifications ({notificationsContext.notifications.length})
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -283,6 +323,28 @@ export default function DashboardContent() {
         {showAITaskDecomposer && (
           <AITaskDecomposer
             onClose={() => setShowAITaskDecomposer(false)}
+          />
+        )}
+        {mobileSidebarOpen && (
+          <MobileBottomNav
+            isOpen={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
+            notificationsCount={notificationsContext.notifications.filter((n: Notification) => !n.read).length}
+            onSecondaryAction={(id: string) => {
+              switch (id) {
+                case 'gantt': setActiveView('gantt'); break
+                case 'suggestions': setShowSuggestions(true); break
+                case 'gamification': setShowGamification(true); break
+                case 'focus': setShowFocusMode(true); break
+                case 'collaboration': setShowCollaboration(true); break
+                case 'automation': setShowAutomationPanel(true); break
+                case 'search': setShowSearch(true); break
+                case 'notifications': setActiveView('notifications'); break
+                case 'mentions': setShowMentions(true); break
+                case 'settings': window.location.href = '/settings'; break
+                default: break
+              }
+            }}
           />
         )}
         {showAIPrioritySuggestions && (
